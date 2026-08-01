@@ -27,3 +27,7 @@ dist-ssr
 **/.env*
 **/.envrc*
 !.env.sample
+
+# Ignore temporary files
+tmp/*
+!tmp/.keep
