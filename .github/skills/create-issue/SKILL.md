@@ -1,6 +1,6 @@
 ---
 name: create-issue
-description: ユーザーの曖昧な指示やチャット履歴から、ソースコードを積極的に調査して背景・ゴール・テスト項目を網羅した実装計画を docs/specs/ブランチ名/todo.md に作成します。
+description: ユーザーの曖昧な指示やチャット履歴から、ソースコードを積極的に調査して背景・ゴール・テスト項目を網羅した実装計画を docs/features/ブランチ名/todo.md に作成します。
 ---
 
 # Create Issue Plan
@@ -8,19 +8,19 @@ description: ユーザーの曖昧な指示やチャット履歴から、ソー�
 ## 実行プロセス
 
 ### 0. ブランチ名の取得
-現在のブランチ名を取得し、`docs/specs/<branch-name>/` の出力先を決めます。
+現在のブランチ名を取得し、`docs/features/<branch-name>/` の出力先を決めます。
 
 使用コマンド例:
 ```bash
 branch_name=$(git rev-parse --abbrev-ref HEAD)
-spec_dir="docs/specs/${branch_name}"
+spec_dir="docs/features/${branch_name}"
 ```
 
 ### 1. 出力先ディレクトリの確認
-`docs/specs/<branch-name>/` がすでに存在するか確認します。
+`docs/features/<branch-name>/` がすでに存在するか確認します。
 
 - すでにディレクトリが存在する場合は、そのまま後続の処理を継続します。
-- ディレクトリが存在しない場合は、`docs/specs/<branch-name>/` を作成してから後続の処理を継続します。
+- ディレクトリが存在しない場合は、`docs/features/<branch-name>/` を作成してから後続の処理を継続します。
 
 使用コマンド例:
 ```bash
@@ -52,7 +52,7 @@ fi
 調査結果をもとに、以下のテンプレートに従って markdown 形式でドラフトを作成します。
 `実装方針`のセクションで、抽象的な説明を避け **具体的なファイルパス・コードスニペット・手順** を用いてください。
 
-`docs/specs/<branch-name>/todo.md` に書き出します。
+`docs/features/<branch-name>/todo.md` に書き出します。
 
 使用コマンド例:
 ```bash
@@ -91,7 +91,7 @@ EOF
 ## 使用コマンド例
 ```bash
 branch_name=$(git rev-parse --abbrev-ref HEAD)
-spec_dir="docs/specs/${branch_name}"
+spec_dir="docs/features/${branch_name}"
 
 if [ ! -d "$spec_dir" ]; then
 	mkdir -p "$spec_dir"
