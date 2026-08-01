@@ -48,6 +48,10 @@ git checkout -b "${branch_name}" origin/main
 ```bash
 spec_dir="docs/features/${branch_name}"
 mkdir -p "${spec_dir}"
+if [ -e "${spec_dir}/memo.md" ]; then
+  echo "memo.md がすでに存在するため処理を終了します: ${spec_dir}/memo.md"
+  exit 1
+fi
 printf '%s\n' "${memo_text}" > "${spec_dir}/memo.md"
 ```
 
