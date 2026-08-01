@@ -10,7 +10,7 @@ disable-model-invocation: false
 ## 目的
 ユーザーの最初の指示を起点に、以下を一気通貫で実行します。
 1. `mmdd_jobname` 形式のブランチ名を決める（ユーザー確認なし）
-2. `git fetch --prune && git checkout -b <branch-name> origin/main` を実行する
+2. `origin/main` を最新化したうえで `git checkout -b <branch-name> origin/main` を実行する
 3. `docs/specs/<branch-name>/` を作る
 4. `docs/specs/<branch-name>/memo.md` にチャットの指示内容を貼り付ける
 
@@ -35,8 +35,13 @@ disable-model-invocation: false
 必ず次の形で実行します。
 
 ```bash
-git fetch && git checkout -b "${branch_name}" origin/main
+git fetch --prune origin
+git checkout -b "${branch_name}" origin/main
 ```
+
+ブランチ作成前チェック:
+- ローカル同名ブランチの存在: `git show-ref --verify --quiet "refs/heads/${branch_name}"`
+- リモート同名ブランチの存在: `git ls-remote --exit-code --heads origin "${branch_name}"`
 
 ### 4. specs ディレクトリと memo.md を作成
 
@@ -45,6 +50,10 @@ spec_dir="docs/specs/${branch_name}"
 mkdir -p "${spec_dir}"
 printf '%s\n' "${memo_text}" > "${spec_dir}/memo.md"
 ```
+
+補足:
+- 既存ファイルを誤って上書きしないため、`memo.md` の存在確認を先に行ってから書き込みます。
+- メモ本文はユーザーの初回指示を原文のまま保存し、解釈や要約は混ぜません。
 
 ## 分岐ルール
 - すでに同名ブランチが存在する場合:
@@ -57,3 +66,7 @@ printf '%s\n' "${memo_text}" > "${spec_dir}/memo.md"
 - `docs/specs/<branch-name>/memo.md` が存在する
 - `memo.md` に最初のチャット指示が保存されている
 - 最終報告でブランチ名と生成ファイルパスを示す
+
+## このリポジトリでの前提
+- 実装本体は主に `src/` 配下にあるため、`memo.md` の次工程では `src/`, `src/lib/`, `src/types/` を優先して調査する。
+- 検証の基本は `npm run lint` と `npm run build`、および手動動作確認。

@@ -12,6 +12,10 @@ argument-hint: "必要なら PR の補足（目的・懸念点・レビュー観
 - 変更ファイルだけでなく、コミット本文の背景情報・判断理由を PR 本文へ反映します。
 - PR のタイトル、要約、変更点、確認観点、テスト観点を整えて `gh pr create` で起票します。
 
+## このリポジトリでの前提
+- 主な変更対象は `src/`, `src/lib/`, `src/types/` と設定ファイル（`package.json`, `vite.config.ts`, `tsconfig*.json`）。
+- `package.json` に `test` スクリプトはないため、検証は `npm run lint` / `npm run build` / 手動確認を基本に記述する。
+
 ## いつ使うか
 - `staged` や `modified` をそのままコミットして PR を作るのではなく、既存コミット列から PR を構成したいとき
 - コミットメッセージに背景・制約・補足が十分に書かれており、PR本文に活かしたいとき
@@ -48,6 +52,7 @@ git diff --name-status origin/main...HEAD
 4. コミット単位の断片をそのまま列挙せず、テーマごとに統合して記述します。
 5. テスト記載は「コミット本文に書かれた確認」と「差分から必要と判断できる確認」を分けて書きます。
 6. 会話履歴由来の内容は、本文中で不自然にならないように背景・変更内容・リスクへ統合します。
+7. `npm run lint` と `npm run build` の実施有無は優先して明記し、未実施なら理由を添えます。
 
 ### 4. 品質チェック
 - `staged` / `modified` だけを根拠に本文を書いていない
@@ -91,6 +96,9 @@ gh pr create --base main --draft --title "<PR_TITLE>" --body-file "$pr_body_file
 ## テスト
 - 実施済み確認（コミット本文由来）
 - 追加で必要な確認
+- `npm run lint` の結果
+- `npm run build` の結果
+- 手動確認の手順と結果
 
 ## リスクと影響範囲
 - 影響を受ける機能
