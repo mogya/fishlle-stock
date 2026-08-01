@@ -1,9 +1,9 @@
 ---
-name: create-issue
+name: create-feature-blueprint
 description: ユーザーの曖昧な指示やチャット履歴から、ソースコードを積極的に調査して背景・ゴール・テスト項目を網羅した実装計画を docs/features/ブランチ名/todo.md に作成します。
 ---
 
-# Create Issue Plan
+# Create Feature Blueprint
 
 ## 実行プロセス
 
