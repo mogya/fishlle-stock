@@ -1,0 +1,22 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "asia-northeast2",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "auth": {
+    "authorizedDomains": [
+      "localhost",
+      "fishlle-stock-mogya.firebaseapp.com",
+      "fishlle-stock-mogya.web.app",
+      "mogya.github.io"
+    ],
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "fishlle-stock",
+        "supportEmail": "mogya@mogya.com"
+      }
+    }
+  }
+}
