@@ -94,4 +94,56 @@ i  firestore: Firestore Emulator logging to firestore-debug.log
   Other reserved ports: 4500, 9150
 
 Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
- ```
+```
+
+
+# 意思決定：本番ホスティングをgithub pagesからfirebase hostingに変える
+
+理由
+- firebase入れるのなら揃えるのが自然
+- まだ開発段階で、本番URLが変わったとて困る人はいない
+- PRごとのプレビューURL自動デプロイが魅力的
+
+注意点として、firebaseはプレビュー環境でも基本的には同じ Firebase project の実バックエンドリソースに接続する。
+これはデータ破壊の不安があるので避けたい。
+
+現在production(firebase)/develop(firebase emulator)の２環境体制だが、プレビュー環境として staging(firebase)を作ったほうが良さそう。
+
+なのでステップを分けて進める
+- 本番をfirebase hostingに移行(この段階ではプレビュー環境は使わない)
+- staging(firebase)を作り、PRごとのプレビューURL自動デプロイを行うようにする
+
+# 本番ホスティングをgithub pagesからfirebase hostingに変える
+
+実施内容
+1. Firebase Hosting 設定を追加
+- firebase.json
+- 追加内容: public を dist、SPA 用 rewrite を index.html へ設定
+
+2. Vite の base を GitHub Pages 用から本番ルート向けへ変更
+- vite.config.ts
+- /fishlle-stock/ → /
+
+3. CI を GitHub Pages から Firebase Hosting へ切替
+- deploy.yml
+- main push 時に build 後、Firebase CLI で hosting deploy する構成へ変更
+- GitHub Secrets に FIREBASE_TOKEN が必要
+
+検証結果
+1. npm run build: 成功
+2. firebase deploy --only hosting: 成功
+3. 公開URL: https://fishlle-stock-mogya.web.app
+
+```
+$ firebase deploy --only hosting
+i  hosting[fishlle-stock-mogya]: finalizing version...
+✔  hosting[fishlle-stock-mogya]: version finalized
+i  hosting[fishlle-stock-mogya]: releasing new version...
+✔  hosting[fishlle-stock-mogya]: release complete
+
+✔  Deploy complete!
+
+Project Console: https://console.firebase.google.com/project/fishlle-stock-mogya/overview
+Hosting URL: https://fishlle-stock-mogya.web.app
+```
+
