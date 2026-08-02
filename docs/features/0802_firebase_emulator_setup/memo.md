@@ -96,7 +96,6 @@ i  firestore: Firestore Emulator logging to firestore-debug.log
 Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
 ```
 
-
 # 意思決定：本番ホスティングをgithub pagesからfirebase hostingに変える
 
 理由
@@ -147,3 +146,73 @@ Project Console: https://console.firebase.google.com/project/fishlle-stock-mogya
 Hosting URL: https://fishlle-stock-mogya.web.app
 ```
 
+# デプロイActionsを公式が生成したものに差し替え
+
+↑ で作ってもらうとサービスアカウントなどを自分で発行しないといけない。公式の生成スクリプトに任せるとサービスアカウントなども自動で作ってくれて、権限不足とかに悩まされなくてすむので`firebase init`をつかう
+
+```
+mogya@itamen:~/develop/fishlle-stock$ firebase init hosting:github
+
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/mogya/develop/fishlle-stock
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+
+=== Project Setup
+
+First, let's associate this project directory with a Firebase project.
+You can create multiple project aliases by running firebase use --add, 
+
+i  Using project fishlle-stock-mogya (fishlle-stock) .
+
+=== Hosting:github Setup
+
+i  Detected a .git folder at /home/mogya/develop/fishlle-stock
+i  Authorizing with GitHub to upload your service account to a GitHub repository's secrets store.
+
+Visit this URL on this device to log in:
+https://github.com/login/oauth/authorize?client_id=89cf50f02ac6aaed3484&state=591864529&redirect_uri=http%3A%2F%2Flocalhost%3A9005&scope=read%3Auser%20repo%20public_repo
+
+Waiting for authentication...
+
+✔  Success! Logged into GitHub as mogya
+
+✔ For which GitHub repository would you like to set up a GitHub workflow? (format: user/repository) mogya/fishlle-stock
+
+✔  Created service account github-action-1314670210 with Firebase Hosting admin permissions.
+✔  Uploaded service account JSON to GitHub as secret FIREBASE_SERVICE_ACCOUNT_FISHLLE_STOCK_MOGYA.
+i  You can manage your secrets at https://github.com/mogya/fishlle-stock/settings/secrets.
+
+✔ Set up the workflow to run a build script before every deploy? No
+
+✔  Created workflow file /home/mogya/develop/fishlle-stock/.github/workflows/firebase-hosting-pull-request.yml
+✔ Set up automatic deployment to your site's live channel when a PR is merged? Yes
+✔ What is the name of the GitHub branch associated with your site's live channel? main
+
+✔  Created workflow file /home/mogya/develop/fishlle-stock/.github/workflows/firebase-hosting-merge.yml
+
+i  Action required: Visit this URL to revoke authorization for the Firebase CLI GitHub OAuth App:
+https://github.com/settings/connections/applications/89cf50f02ac6aaed3484
+i  Action required: Push any new workflow file(s) to your repo
+
+=== Agent Skills Setup
+If you are using an AI coding agent, Firebase Agent Skills make it an expert at Firebase.
+✔ Would you like to install agent skills for Firebase? Yes
+i  Installing Agent skills in the background...
+✔  Agent skills installation started
+
+✔  Wrote configuration info to firebase.json
+✔  Wrote project information to .firebaserc
+
+✔  Firebase initialization complete!
+```
