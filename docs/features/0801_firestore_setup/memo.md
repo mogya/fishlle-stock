@@ -195,6 +195,17 @@ i  firestore: deploying indexes...
 ✔  Deploy complete!
 
 Project Console: https://console.firebase.google.com/project/fishlle-stock-mogya/overview
+mogya@itamen:~/develop/fishlle-stock$ firebase deploy --only auth
+
+=== Deploying to 'fishlle-stock-mogya'...
+
+i  deploying auth
+Enabling auth providers: Google sign-in...
+✔  Auth providers enabled: Google sign-in
+
+✔  Deploy complete!
+
+Project Console: https://console.firebase.google.com/project/fishlle-stock-mogya/overview
 mogya@itamen:~/develop/fishlle-stock$ firebase apps:list
 ✔ Preparing the list of your Firebase apps
 ┌──────────────────┬───────────────────────────────────────────┬──────────┐
