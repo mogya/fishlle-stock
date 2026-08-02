@@ -23,16 +23,27 @@ service cloud.firestore {
     match /households/{householdId} {
       allow create: if isSignedIn() &&
         request.resource.data.ownerUid == request.auth.uid;
-      allow read, update, delete: if isHouseholdMember(householdId);
+      allow read: if isHouseholdMember(householdId) ||
+        (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow update: if (isHouseholdMember(householdId) ||
+        (isSignedIn() && resource.data.ownerUid == request.auth.uid)) &&
+        request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if isHouseholdOwner(householdId);
 
       match /members/{uid} {
         allow read: if isHouseholdMember(householdId);
-        allow create: if isHouseholdOwner(householdId);
+        allow create: if isHouseholdOwner(householdId) ||
+          (
+            isSignedIn() &&
+            uid == request.auth.uid &&
+            getAfter(householdDocPath(householdId)).data.ownerUid == request.auth.uid
+          );
         allow update: if isHouseholdOwner(householdId);
         allow delete: if isHouseholdOwner(householdId) ||
           (isSignedIn() && request.auth.uid == uid);
       }
 
+      // TODO: データモデル確定後に hasOnlyAllowedFields 相当の検証と文字列長制限（リポジトリ内の .agents/skills/firebase-firestore/references/standard/security_rules.md にあるガイドライン）を追加することを推奨
       match /items/{itemId} {
         allow read, create, update, delete: if isHouseholdMember(householdId);
       }
