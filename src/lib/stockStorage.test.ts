@@ -1,9 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadStockItems, saveStockItems } from './stockStorage'
 
 describe('stockStorage', () => {
   beforeEach(() => {
     localStorage.clear()
+  })
+
+  afterEach(() => {
     vi.restoreAllMocks()
   })
 
