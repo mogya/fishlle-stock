@@ -20,48 +20,22 @@ Error: Process completed with exit code 1.
 権限を追加
 
 ```
+mogya@itamen:~/develop/fishlle-stock$ gcloud projects add-iam-policy-binding fishlle-stock-mogya --member="serviceAccount:github-action-＊＊＊＊@fishlle-stock-mogya.iam.gserviceaccount.com" --role="roles/firebaserules.admin"
+Updated IAM policy for project [fishlle-stock-mogya].
+bindings:
+:
 mogya@itamen:~/develop/fishlle-stock$ gcloud projects add-iam-policy-binding fishlle-stock-mogya --member="serviceAccount:github-action-＊＊＊＊@fishlle-stock-mogya.iam.gserviceaccount.com" --role="roles/datastore.indexAdmin"
 Updated IAM policy for project [fishlle-stock-mogya].
 bindings:
-- members:
-  - serviceAccount:github-action-＊＊＊＊@fishlle-stock-mogya.iam.gserviceaccount.com
-  role: roles/cloudfunctions.developer
-- members:
-  - serviceAccount:github-action-＊＊＊＊@fishlle-stock-mogya.iam.gserviceaccount.com
-  role: roles/datastore.indexAdmin
-- members:
-  - serviceAccount:service-446445036597@gcp-sa-firebase.iam.gserviceaccount.com
-  role: roles/firebase.managementServiceAgent
-- members:
-  - serviceAccount:firebase-adminsdk-fbsvc@fishlle-stock-mogya.iam.gserviceaccount.com
-  role: roles/firebase.sdkAdminServiceAgent
-- members:
-  - serviceAccount:firebase-adminsdk-fbsvc@fishlle-stock-mogya.iam.gserviceaccount.com
-  - serviceAccount:github-action-＊＊＊＊@fishlle-stock-mogya.iam.gserviceaccount.com
-  role: roles/firebaseauth.admin
-- members:
-  - serviceAccount:github-action-＊＊＊＊@fishlle-stock-mogya.iam.gserviceaccount.com
-  role: roles/firebasehosting.admin
-- members:
-  - serviceAccount:service-446445036597@firebase-rules.iam.gserviceaccount.com
-  role: roles/firebaserules.system
-- members:
-  - serviceAccount:service-446445036597@gcp-sa-firestore.iam.gserviceaccount.com
-  role: roles/firestore.serviceAgent
-- members:
-  - serviceAccount:firebase-adminsdk-fbsvc@fishlle-stock-mogya.iam.gserviceaccount.com
-  role: roles/iam.serviceAccountTokenCreator
-- members:
-  - user:mogya@mogya.com
-  role: roles/owner
-- members:
-  - serviceAccount:github-action-＊＊＊＊@fishlle-stock-mogya.iam.gserviceaccount.com
-  role: roles/run.viewer
-- members:
-  - serviceAccount:github-action-＊＊＊＊@fishlle-stock-mogya.iam.gserviceaccount.com
-  role: roles/serviceusage.apiKeysViewer
-- members:
-  - serviceAccount:github-action-＊＊＊＊@fishlle-stock-mogya.iam.gserviceaccount.com
-  role: roles/serviceusage.serviceUsageConsumer
-version: 1
+:
+mogya@itamen:~/develop/fishlle-stock$ gcloud projects get-iam-policy fishlle-stock-mogya     --flatten="bindings[].members"     --filter="bindings.members=serviceAccount:github-action-＊＊＊＊@fishlle-stock-mogya.iam.gserviceaccount.com"     --format="table(bindings.role)"
+ROLE
+roles/cloudfunctions.developer
+roles/datastore.indexAdmin
+roles/firebaseauth.admin
+roles/firebasehosting.admin
+roles/firebaserules.admin
+roles/run.viewer
+roles/serviceusage.apiKeysViewer
+roles/serviceusage.serviceUsageConsumer
 ```
