@@ -33,3 +33,5 @@ tmp/*
 !tmp/.keep
 
 .firebase
+/.worktrees/*
+!/.worktrees/.keep
