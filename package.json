@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "deploy:firestore": "firebase deploy --only firestore",
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck:rules": "tsc -p tsconfig.rules.json --noEmit",
