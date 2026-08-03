@@ -179,3 +179,32 @@ button {
 .eat-button:active {
   background: #fde68a;
 }
+
+.secondary-button {
+  background: #e5e7eb;
+  color: #1f2933;
+}
+
+.secondary-button:active {
+  background: #d1d5db;
+}
+
+.loading-message {
+  color: #6b7280;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.invite-code {
+  color: #1f2933;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px;
+  word-break: break-all;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
