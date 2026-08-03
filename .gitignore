@@ -31,3 +31,5 @@ dist-ssr
 # Ignore temporary files
 tmp/*
 !tmp/.keep
+
+.firebase
