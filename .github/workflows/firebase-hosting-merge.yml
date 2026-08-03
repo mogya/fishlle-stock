@@ -21,6 +21,9 @@ jobs:
         run: npm run deploy:firestore -- --project fishlle-stock-mogya
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
+      - name: Cleanup Firebase service account file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-service-account.json"
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
