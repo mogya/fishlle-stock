@@ -20,6 +20,77 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/households/$(householdId)/members/$(request.auth.uid));
     }
 
+    function itemAllowedFields() {
+      return [
+        'name',
+        'remainingCount',
+        'receivedDate',
+        'createdAt',
+        'updatedAt',
+        'createdBy',
+        'updatedBy',
+      ];
+    }
+
+    function isValidItemName(name) {
+      return name is string &&
+        name.size() >= 1 &&
+        name.size() <= 100;
+    }
+
+    function isValidReceivedDate(date) {
+      return date is string &&
+        date.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    function isValidRemainingCountForCreate(count) {
+      return count is int && count >= 1 && count <= 99;
+    }
+
+    function isValidRemainingCountForUpdate(count) {
+      return count is int && count >= 0 && count <= 99;
+    }
+
+    function hasRequiredItemFields(data) {
+      return data.keys().hasAll(itemAllowedFields());
+    }
+
+    function hasOnlyAllowedItemFields(data) {
+      return data.keys().hasOnly(itemAllowedFields());
+    }
+
+    function isValidItemCommonFields(data) {
+      return isValidItemName(data.name) &&
+        isValidReceivedDate(data.receivedDate) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        data.createdBy is string &&
+        data.updatedBy is string;
+    }
+
+    function isValidItemCreate(data) {
+      return hasRequiredItemFields(data) &&
+        hasOnlyAllowedItemFields(data) &&
+        isValidItemCommonFields(data) &&
+        isValidRemainingCountForCreate(data.remainingCount) &&
+        data.createdBy == request.auth.uid &&
+        data.updatedBy == request.auth.uid &&
+        data.createdBy == data.updatedBy &&
+        data.createdAt == request.time &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidItemUpdate() {
+      return hasRequiredItemFields(request.resource.data) &&
+        hasOnlyAllowedItemFields(request.resource.data) &&
+        isValidItemCommonFields(request.resource.data) &&
+        isValidRemainingCountForUpdate(request.resource.data.remainingCount) &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.createdBy == resource.data.createdBy &&
+        request.resource.data.updatedBy == request.auth.uid &&
+        request.resource.data.updatedAt == request.time;
+    }
+
     match /households/{householdId} {
       allow create: if isSignedIn() &&
         request.resource.data.ownerUid == request.auth.uid;
@@ -43,9 +114,12 @@ service cloud.firestore {
           (isSignedIn() && request.auth.uid == uid);
       }
 
-      // TODO: データモデル確定後に hasOnlyAllowedFields 相当の検証と文字列長制限（リポジトリ内の .agents/skills/firebase-firestore/references/standard/security_rules.md にあるガイドライン）を追加することを推奨
       match /items/{itemId} {
-        allow read, create, update, delete: if isHouseholdMember(householdId);
+        allow read, delete: if isHouseholdMember(householdId);
+        allow create: if isHouseholdMember(householdId) &&
+          isValidItemCreate(request.resource.data);
+        allow update: if isHouseholdMember(householdId) &&
+          isValidItemUpdate();
       }
     }
 
