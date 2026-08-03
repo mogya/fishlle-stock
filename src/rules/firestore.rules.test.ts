@@ -15,6 +15,7 @@ import { afterAll, afterEach, beforeAll, describe, it } from 'vitest'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rulesPath = path.resolve(__dirname, '../../firestore.rules')
+const rulesTestProjectId = process.env.FIREBASE_PROJECT_ID ?? 'fishlle-stock-mogya'
 
 let testEnv: RulesTestEnvironment | undefined
 
@@ -46,7 +47,7 @@ async function seedHousehold(householdId: string, ownerUid: string, memberUids: 
 describe('Firestore rules', () => {
   beforeAll(async () => {
     testEnv = await initializeTestEnvironment({
-      projectId: 'fishlle-stock-rules-test',
+      projectId: rulesTestProjectId,
       firestore: {
         host: '127.0.0.1',
         port: 8080,

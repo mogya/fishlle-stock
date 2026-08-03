@@ -11,7 +11,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:rules": "vitest run --config vitest.rules.config.ts",
-    "test:rules:emulator": "firebase emulators:exec --only firestore \"npm run test:rules\""
+    "test:rules:emulator": "firebase emulators:exec --project fishlle-stock-mogya --only firestore \"npm run test:rules\""
   },
   "dependencies": {
     "firebase": "^12.17.0",
