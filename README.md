@@ -37,3 +37,23 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## テスト
+
+```bash
+npm run test:run
+```
+
+### Firestore ルールテスト
+
+Firestore Emulator を起動してルールテストを実行します。
+
+```bash
+npm run test:rules:emulator
+```
+
+ルールテスト本体だけ実行する場合（Emulator がすでに起動済みの場合）は以下を使います。
+
+```bash
+npm run test:rules
+```

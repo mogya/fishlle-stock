@@ -64,3 +64,25 @@
 - 食べた操作
 
 3. 最後に必要なら Playwright を追加
+
+# テストの導入
+
+テスト基盤を導入しPR品質ゲートにlint・test・buildを組み込む
+
+- Vitest + React Testing Library + jsdom を導入し、テスト実行スクリプト test / test:run を package.json に追加
+- vite.config.ts を vitest/config ベースへ変更し、jsdom 環境と src/test/setup.ts（jest-dom と cleanup）を設定
+- tsconfig.app.json に vitest/globals と @testing-library/jest-dom の型定義を追加
+- 単体/コンポーネントの初期テスト雛形を追加: src/lib/stockParser.test.ts, src/lib/stockStorage.test.ts, src/lib/stockItemFactory.test.ts, App.test.tsx
+- PR 用 GitHub Actions を追加・拡張: pr-test.yml で pull_request 時に npm ci → npm run lint → npm run test:run → npm run build を実行
+
+# ruleテストの追加
+
+Firestore移行準備としてセキュリティルールテスト基盤を追加しPR品質ゲートへ統合
+
+- LocalStorage から Firebase への切り替え予定と、既存ルールの継続的検証を目的に、Firestore ルールテストの実行基盤を追加
+- ルールテスト用スクリプトを追加し、エミュレータ経由で再現可能に整備
+- ルールテスト本体を新規追加し、未認証アクセス拒否、世帯作成条件、メンバー読取可否、items 書込可否、メンバー削除権限など主要な認可ケースをカバー
+- 通常のフロント側テスト実行と干渉しないよう、ルールテスト専用の Vitest 設定を分離し、通常テスト側は除外設定を安全に拡張
+- Node 組み込みモジュール参照に必要な型定義を追加してビルド整合性を確保
+- PR ワークフローに Firestore ルールテスト実行ステップを追加し、既存の lint・test・build と合わせて品質ゲートを強化
+- README にテスト実行手順とルールテスト手順を追記
