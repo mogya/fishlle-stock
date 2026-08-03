@@ -20,6 +20,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore'
 import { afterAll, afterEach, beforeAll, describe, it } from 'vitest'
 
@@ -143,6 +144,34 @@ describe('Firestore rules', () => {
     const householdRef = doc(firestoreFor('owner-1'), 'households/h2')
 
     await assertSucceeds(setDoc(householdRef, { ownerUid: 'owner-1' }))
+  })
+
+  it('allows owner to create household, owner member, and user doc in a batch', async () => {
+    const db = firestoreFor('owner-1')
+    const batch = writeBatch(db)
+    const householdRef = doc(db, 'households/h-batch')
+    const memberRef = doc(db, 'households/h-batch/members/owner-1')
+    const userRef = doc(db, 'users/owner-1')
+
+    batch.set(householdRef, {
+      ownerUid: 'owner-1',
+      name: 'batch household',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+    batch.set(memberRef, {
+      uid: 'owner-1',
+      role: 'owner',
+      displayName: 'Owner',
+      email: 'owner@example.com',
+      joinedAt: serverTimestamp(),
+    })
+    batch.set(userRef, {
+      currentHouseholdId: 'h-batch',
+      householdIds: ['h-batch'],
+    })
+
+    await assertSucceeds(batch.commit())
   })
 
   it('denies create when ownerUid does not match auth uid', async () => {

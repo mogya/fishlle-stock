@@ -40,14 +40,19 @@ function convertItem(id: string, data: Record<string, unknown>): StockItem {
 export function subscribeStockItems(
   householdId: string,
   callback: (items: StockItem[]) => void,
+  onError?: (error: Error) => void,
 ): () => void {
   const { firestore } = getFirebaseServices()
   const itemsRef = collection(firestore, 'households', householdId, 'items')
   const q = query(itemsRef, orderBy('receivedDate', 'asc'))
-  return onSnapshot(q, (snapshot) => {
-    const items = snapshot.docs.map((d) => convertItem(d.id, d.data() as Record<string, unknown>))
-    callback(items)
-  })
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const items = snapshot.docs.map((d) => convertItem(d.id, d.data() as Record<string, unknown>))
+      callback(items)
+    },
+    onError,
+  )
 }
 
 export async function addStockItems(householdId: string, items: StockItem[], user: User): Promise<void> {

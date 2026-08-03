@@ -47,6 +47,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
+
   useEffect(() => {
     return subscribeAuth((user) => setAuthUser(user))
   }, [])
@@ -59,7 +60,12 @@ function App() {
       setHousehold(null)
       return
     }
-    return subscribeHouseholdForUser(authUser.uid, (h) => setHousehold(h))
+    setHousehold(undefined)
+    return subscribeHouseholdForUser(
+      authUser.uid,
+      (h) => setHousehold(h),
+      (err) => setError(err.message),
+    )
   }, [authUser])
 
   useEffect(() => {
@@ -67,8 +73,16 @@ function App() {
       setStockItems([])
       return
     }
-    return subscribeStockItems(household.id, (items) => setStockItems(items))
+    return subscribeStockItems(
+      household.id,
+      (items) => setStockItems(items),
+      (err) => setError(err.message),
+    )
   }, [household])
+
+  useEffect(() => {
+    setInviteCode(null)
+  }, [authUser, household])
 
   const sortedStockItems = useMemo(() => {
     return [...stockItems]

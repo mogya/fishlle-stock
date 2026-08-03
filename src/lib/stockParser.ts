@@ -34,8 +34,8 @@ export function parseStockText(text: string): ParseStockTextResult {
     }
 
     const count = Number(countText)
-    if (!Number.isFinite(count) || !Number.isInteger(count) || count <= 0) {
-      errors.push(`${i + 1}行目：数量は1以上の整数で入力してください`)
+    if (!Number.isFinite(count) || !Number.isInteger(count) || count <= 0 || count > 99) {
+      errors.push(`${i + 1}行目：数量は1以上99以下の整数で入力してください`)
       continue
     }
 
@@ -44,6 +44,12 @@ export function parseStockText(text: string): ParseStockTextResult {
       existing.count += count
     } else {
       itemsByName.set(name, { name, count })
+    }
+  }
+
+  for (const item of itemsByName.values()) {
+    if (item.count > 99) {
+      errors.push(`${item.name}：合計数量が99を超えています`)
     }
   }
 

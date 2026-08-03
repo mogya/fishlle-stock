@@ -145,7 +145,7 @@ service cloud.firestore {
       allow create: if isSignedIn() &&
         isValidInviteCreate(request.resource.data) &&
         isHouseholdOwner(request.resource.data.householdId);
-      allow read: if isSignedIn() && resource.data.expiresAt > request.time;
+      allow read: if isSignedIn() && (resource == null || resource.data.expiresAt > request.time);
       allow delete: if isSignedIn() && isHouseholdOwner(resource.data.householdId);
     }
 

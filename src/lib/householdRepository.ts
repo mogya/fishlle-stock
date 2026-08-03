@@ -101,34 +101,45 @@ export async function joinHouseholdByInviteCode(user: User, code: string): Promi
 export function subscribeHouseholdForUser(
   uid: string,
   callback: (household: Household | null) => void,
+  onError?: (error: Error) => void,
 ): () => void {
   const { firestore } = getFirebaseServices()
   const userRef = doc(firestore, 'users', uid)
   let householdUnsubscribe: (() => void) | undefined
 
-  const unsubscribeUser = onSnapshot(userRef, (userSnap) => {
-    const data = (userSnap.data() as UserHouseholdData | undefined) ?? { currentHouseholdId: null, householdIds: [] }
-    const householdId = data.currentHouseholdId
+  const handleError = onError ?? (() => undefined)
 
-    if (householdUnsubscribe) {
-      householdUnsubscribe()
-      householdUnsubscribe = undefined
-    }
+  const unsubscribeUser = onSnapshot(
+    userRef,
+    (userSnap) => {
+      const data = (userSnap.data() as UserHouseholdData | undefined) ?? { currentHouseholdId: null, householdIds: [] }
+      const householdId = data.currentHouseholdId
 
-    if (!householdId) {
-      callback(null)
-      return
-    }
+      if (householdUnsubscribe) {
+        householdUnsubscribe()
+        householdUnsubscribe = undefined
+      }
 
-    const householdRef = doc(firestore, 'households', householdId)
-    householdUnsubscribe = onSnapshot(householdRef, (householdSnap) => {
-      if (!householdSnap.exists()) {
+      if (!householdId) {
         callback(null)
         return
       }
-      callback({ id: householdSnap.id, ...(householdSnap.data() as Omit<Household, 'id'>) })
-    })
-  })
+
+      const householdRef = doc(firestore, 'households', householdId)
+      householdUnsubscribe = onSnapshot(
+        householdRef,
+        (householdSnap) => {
+          if (!householdSnap.exists()) {
+            callback(null)
+            return
+          }
+          callback({ id: householdSnap.id, ...(householdSnap.data() as Omit<Household, 'id'>) })
+        },
+        handleError,
+      )
+    },
+    handleError,
+  )
 
   return () => {
     unsubscribeUser()
