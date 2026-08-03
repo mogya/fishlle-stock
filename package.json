@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
+    "typecheck:rules": "tsc -p tsconfig.rules.json --noEmit",
     "test:rules": "vitest run --config vitest.rules.config.ts",
     "test:rules:emulator": "firebase emulators:exec --project fishlle-stock-mogya --only firestore \"npm run test:rules\""
   },

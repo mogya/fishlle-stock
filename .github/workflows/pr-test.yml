@@ -41,6 +41,9 @@ jobs:
       - name: Run test suite
         run: npm run test:run
 
+      - name: Typecheck Firestore rules tests
+        run: npm run typecheck:rules
+
       - name: Run Firestore rules tests
         run: npm run test:rules:emulator
         env:
