@@ -37,7 +37,29 @@ describe('parseStockText', () => {
 
     expect(result.message).toContain('1行目：区切り文字（: または ：）が見つかりません')
     expect(result.message).toContain('2行目：商品名が空です')
-    expect(result.message).toContain('3行目：数量は1以上の整数で入力してください')
-    expect(result.message).toContain('4行目：数量は1以上の整数で入力してください')
+    expect(result.message).toContain('3行目：数量は1以上99以下の整数で入力してください')
+    expect(result.message).toContain('4行目：数量は1以上99以下の整数で入力してください')
+  })
+
+  it('rejects counts over 99', () => {
+    const result = parseStockText('さば:100')
+
+    expect(result.ok).toBe(false)
+    if (result.ok) {
+      return
+    }
+
+    expect(result.message).toContain('数量は1以上99以下の整数で入力してください')
+  })
+
+  it('rejects combined counts over 99', () => {
+    const result = parseStockText('さば:60\nさば：50')
+
+    expect(result.ok).toBe(false)
+    if (result.ok) {
+      return
+    }
+
+    expect(result.message).toContain('合計数量が99を超えています')
   })
 })

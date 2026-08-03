@@ -6,13 +6,26 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isCurrentUser(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
     function householdDocPath(householdId) {
       return /databases/$(database)/documents/households/$(householdId);
+    }
+
+    function householdInvitePath(inviteCode) {
+      return /databases/$(database)/documents/householdInvites/$(inviteCode);
     }
 
     function isHouseholdOwner(householdId) {
       return isSignedIn() &&
         get(householdDocPath(householdId)).data.ownerUid == request.auth.uid;
+    }
+
+    function isHouseholdOwnerAfter(householdId) {
+      return isSignedIn() &&
+        getAfter(householdDocPath(householdId)).data.ownerUid == request.auth.uid;
     }
 
     function isHouseholdMember(householdId) {
@@ -91,6 +104,51 @@ service cloud.firestore {
         request.resource.data.updatedAt == request.time;
     }
 
+    function isValidUserData(data) {
+      return data.keys().hasOnly(['currentHouseholdId', 'householdIds']) &&
+        (data.currentHouseholdId == null || data.currentHouseholdId is string) &&
+        data.householdIds is list;
+    }
+
+    function isValidMemberJoin(householdId, uid, data) {
+      return isSignedIn() &&
+        uid == request.auth.uid &&
+        data.keys().hasAll(['uid', 'role', 'displayName', 'email', 'joinedAt', 'invitedBy', 'inviteCode']) &&
+        data.keys().hasOnly(['uid', 'role', 'displayName', 'email', 'joinedAt', 'invitedBy', 'inviteCode']) &&
+        data.uid == request.auth.uid &&
+        data.role == 'member' &&
+        data.displayName is string &&
+        data.email is string &&
+        data.joinedAt == request.time &&
+        data.invitedBy is string &&
+        data.inviteCode is string &&
+        exists(householdInvitePath(data.inviteCode)) &&
+        get(householdInvitePath(data.inviteCode)).data.householdId == householdId &&
+        get(householdInvitePath(data.inviteCode)).data.expiresAt > request.time;
+    }
+
+    function isValidInviteCreate(data) {
+      return data.keys().hasOnly(['householdId', 'createdBy', 'createdAt', 'expiresAt']) &&
+        data.householdId is string &&
+        data.createdBy == request.auth.uid &&
+        data.createdAt == request.time &&
+        data.expiresAt is timestamp &&
+        data.expiresAt > request.time;
+    }
+
+    match /users/{uid} {
+      allow read: if isCurrentUser(uid);
+      allow create, update: if isCurrentUser(uid) && isValidUserData(request.resource.data);
+    }
+
+    match /householdInvites/{inviteCode} {
+      allow create: if isSignedIn() &&
+        isValidInviteCreate(request.resource.data) &&
+        isHouseholdOwner(request.resource.data.householdId);
+      allow read: if isSignedIn() && (resource == null || resource.data.expiresAt > request.time);
+      allow delete: if isSignedIn() && isHouseholdOwner(resource.data.householdId);
+    }
+
     match /households/{householdId} {
       allow create: if isSignedIn() &&
         request.resource.data.ownerUid == request.auth.uid;
@@ -104,11 +162,8 @@ service cloud.firestore {
       match /members/{uid} {
         allow read: if isHouseholdMember(householdId);
         allow create: if isHouseholdOwner(householdId) ||
-          (
-            isSignedIn() &&
-            uid == request.auth.uid &&
-            getAfter(householdDocPath(householdId)).data.ownerUid == request.auth.uid
-          );
+          isHouseholdOwnerAfter(householdId) ||
+          isValidMemberJoin(householdId, uid, request.resource.data);
         allow update: if isHouseholdOwner(householdId);
         allow delete: if isHouseholdOwner(householdId) ||
           (isSignedIn() && request.auth.uid == uid);

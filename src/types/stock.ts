@@ -8,6 +8,8 @@ export type StockItem = {
   receivedDate: DateString
   createdAt: string
   updatedAt: string
+  createdBy?: string
+  updatedBy?: string
 }
 
 export type StockInputItem = {

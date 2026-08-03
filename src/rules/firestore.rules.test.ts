@@ -11,12 +11,16 @@ import {
 } from '@firebase/rules-unit-testing'
 import {
   Timestamp,
+  collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore'
 import { afterAll, afterEach, beforeAll, describe, it } from 'vitest'
 
@@ -49,6 +53,26 @@ async function seedHousehold(householdId: string, ownerUid: string, memberUids: 
         uid: memberUid,
       })
     }
+  })
+}
+
+async function seedInvite(
+  inviteCode: string,
+  householdId: string,
+  createdBy: string,
+  expiresAt: Timestamp = Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000),
+) {
+  if (!testEnv) {
+    throw new Error('Test environment is not initialized')
+  }
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore()
+    await setDoc(doc(db, `householdInvites/${inviteCode}`), {
+      householdId,
+      createdBy,
+      createdAt: Timestamp.now(),
+      expiresAt,
+    })
   })
 }
 
@@ -120,6 +144,34 @@ describe('Firestore rules', () => {
     const householdRef = doc(firestoreFor('owner-1'), 'households/h2')
 
     await assertSucceeds(setDoc(householdRef, { ownerUid: 'owner-1' }))
+  })
+
+  it('allows owner to create household, owner member, and user doc in a batch', async () => {
+    const db = firestoreFor('owner-1')
+    const batch = writeBatch(db)
+    const householdRef = doc(db, 'households/h-batch')
+    const memberRef = doc(db, 'households/h-batch/members/owner-1')
+    const userRef = doc(db, 'users/owner-1')
+
+    batch.set(householdRef, {
+      ownerUid: 'owner-1',
+      name: 'batch household',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+    batch.set(memberRef, {
+      uid: 'owner-1',
+      role: 'owner',
+      displayName: 'Owner',
+      email: 'owner@example.com',
+      joinedAt: serverTimestamp(),
+    })
+    batch.set(userRef, {
+      currentHouseholdId: 'h-batch',
+      householdIds: ['h-batch'],
+    })
+
+    await assertSucceeds(batch.commit())
   })
 
   it('denies create when ownerUid does not match auth uid', async () => {
@@ -283,5 +335,185 @@ describe('Firestore rules', () => {
     const otherMemberRef = doc(firestoreFor('member-1'), 'households/h9/members/member-2')
 
     await assertFails(deleteDoc(otherMemberRef))
+  })
+
+  describe('invites', () => {
+    it('allows owner to create an invite', async () => {
+      await seedHousehold('hi-owner', 'owner-1', ['owner-1'])
+      const inviteRef = doc(firestoreFor('owner-1'), 'householdInvites/invite-owner')
+
+      await assertSucceeds(
+        setDoc(inviteRef, {
+          householdId: 'hi-owner',
+          createdBy: 'owner-1',
+          createdAt: serverTimestamp(),
+          expiresAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000),
+        }),
+      )
+    })
+
+    it('denies member creating an invite', async () => {
+      await seedHousehold('hi-member', 'owner-1', ['owner-1', 'member-1'])
+      const inviteRef = doc(firestoreFor('member-1'), 'householdInvites/invite-member')
+
+      await assertFails(
+        setDoc(inviteRef, {
+          householdId: 'hi-member',
+          createdBy: 'member-1',
+          createdAt: serverTimestamp(),
+          expiresAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000),
+        }),
+      )
+    })
+
+    it('denies outsider creating an invite', async () => {
+      await seedHousehold('hi-outsider', 'owner-1', ['owner-1'])
+      const inviteRef = doc(firestoreFor('outsider'), 'householdInvites/invite-outsider')
+
+      await assertFails(
+        setDoc(inviteRef, {
+          householdId: 'hi-outsider',
+          createdBy: 'outsider',
+          createdAt: serverTimestamp(),
+          expiresAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000),
+        }),
+      )
+    })
+
+    it('allows signed-in user to get a valid invite', async () => {
+      await seedHousehold('hi-get', 'owner-1')
+      await seedInvite('invite-get', 'hi-get', 'owner-1')
+      const inviteRef = doc(firestoreFor('member-1'), 'householdInvites/invite-get')
+
+      await assertSucceeds(getDoc(inviteRef))
+    })
+
+    it('denies getting an expired invite', async () => {
+      await seedHousehold('hi-expired', 'owner-1')
+      await seedInvite('invite-expired', 'hi-expired', 'owner-1', Timestamp.fromMillis(Date.now() - 1000))
+      const inviteRef = doc(firestoreFor('member-1'), 'householdInvites/invite-expired')
+
+      await assertFails(getDoc(inviteRef))
+    })
+
+    it('denies listing invites', async () => {
+      await seedHousehold('hi-list', 'owner-1')
+      await seedInvite('invite-list', 'hi-list', 'owner-1')
+      const db = firestoreFor('member-1')
+
+      await assertFails(getDocs(query(collection(db, 'householdInvites'))))
+    })
+
+    it('allows signed-in user to join with a valid invite', async () => {
+      await seedHousehold('hi-join', 'owner-1')
+      await seedInvite('invite-join', 'hi-join', 'owner-1')
+      const memberRef = doc(firestoreFor('member-2'), 'households/hi-join/members/member-2')
+
+      await assertSucceeds(
+        setDoc(memberRef, {
+          uid: 'member-2',
+          role: 'member',
+          displayName: 'Member Two',
+          email: 'member2@example.com',
+          joinedAt: serverTimestamp(),
+          invitedBy: 'owner-1',
+          inviteCode: 'invite-join',
+        }),
+      )
+    })
+
+    it('denies joining with an expired invite', async () => {
+      await seedHousehold('hi-join-expired', 'owner-1')
+      await seedInvite('invite-join-expired', 'hi-join-expired', 'owner-1', Timestamp.fromMillis(Date.now() - 1000))
+      const memberRef = doc(firestoreFor('member-2'), 'households/hi-join-expired/members/member-2')
+
+      await assertFails(
+        setDoc(memberRef, {
+          uid: 'member-2',
+          role: 'member',
+          displayName: 'Member Two',
+          email: 'member2@example.com',
+          joinedAt: serverTimestamp(),
+          invitedBy: 'owner-1',
+          inviteCode: 'invite-join-expired',
+        }),
+      )
+    })
+
+    it('denies joining for another user uid', async () => {
+      await seedHousehold('hi-join-other', 'owner-1')
+      await seedInvite('invite-join-other', 'hi-join-other', 'owner-1')
+      const memberRef = doc(firestoreFor('member-3'), 'households/hi-join-other/members/member-2')
+
+      await assertFails(
+        setDoc(memberRef, {
+          uid: 'member-2',
+          role: 'member',
+          displayName: 'Member Two',
+          email: 'member2@example.com',
+          joinedAt: serverTimestamp(),
+          invitedBy: 'owner-1',
+          inviteCode: 'invite-join-other',
+        }),
+      )
+    })
+  })
+
+  describe('users', () => {
+    it('allows user to create own user doc', async () => {
+      const userRef = doc(firestoreFor('user-1'), 'users/user-1')
+
+      await assertSucceeds(
+        setDoc(userRef, {
+          currentHouseholdId: null,
+          householdIds: [],
+        }),
+      )
+    })
+
+    it('allows user to update own user doc', async () => {
+      const db = firestoreFor('user-1')
+      await testEnv?.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'users/user-1'), {
+          currentHouseholdId: null,
+          householdIds: [],
+        })
+      })
+      const userRef = doc(db, 'users/user-1')
+
+      await assertSucceeds(
+        setDoc(
+          userRef,
+          {
+            currentHouseholdId: 'h1',
+            householdIds: ['h1'],
+          },
+          { merge: true },
+        ),
+      )
+    })
+
+    it('denies another user writing user doc', async () => {
+      const userRef = doc(firestoreFor('user-2'), 'users/user-1')
+
+      await assertFails(
+        setDoc(userRef, {
+          currentHouseholdId: null,
+          householdIds: [],
+        }),
+      )
+    })
+
+    it('denies user reading another user doc', async () => {
+      await testEnv?.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'users/user-1'), {
+          currentHouseholdId: null,
+          householdIds: [],
+        })
+      })
+      const userRef = doc(firestoreFor('user-2'), 'users/user-1')
+
+      await assertFails(getDoc(userRef))
+    })
   })
 })
