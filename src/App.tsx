@@ -81,11 +81,11 @@ function App() {
       (items) => setStockItems(items),
       (err) => setError(err.message),
     )
-  }, [household])
+  }, [household?.id])
 
   useEffect(() => {
     setInviteCode(null)
-  }, [authUser, household])
+  }, [authUser?.uid, household?.id])
 
   const sortedStockItems = useMemo(() => {
     return [...stockItems]

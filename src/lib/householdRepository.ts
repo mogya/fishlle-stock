@@ -17,6 +17,24 @@ export interface UserHouseholdData {
   householdIds: string[]
 }
 
+function timestampMillis(value: Household['createdAt'] | Household['updatedAt']): number | null {
+  return value ? value.toMillis() : null
+}
+
+function isSameHousehold(a: Household | null, b: Household | null): boolean {
+  if (a === b) {
+    return true
+  }
+  if (!a || !b) {
+    return false
+  }
+  return a.id === b.id &&
+    a.ownerUid === b.ownerUid &&
+    a.name === b.name &&
+    timestampMillis(a.createdAt) === timestampMillis(b.createdAt) &&
+    timestampMillis(a.updatedAt) === timestampMillis(b.updatedAt)
+}
+
 export async function createHouseholdForUser(user: User, name = 'my household'): Promise<Household> {
   const { firestore } = getFirebaseServices()
   const householdRef = doc(collection(firestore, 'households'))
@@ -106,6 +124,8 @@ export function subscribeHouseholdForUser(
   const { firestore } = getFirebaseServices()
   const userRef = doc(firestore, 'users', uid)
   let householdUnsubscribe: (() => void) | undefined
+  let currentHouseholdId: string | null = null
+  let lastNotifiedHousehold: Household | null = null
 
   const handleError = onError ?? (() => undefined)
 
@@ -120,30 +140,49 @@ export function subscribeHouseholdForUser(
       const data = (userSnap.data() as UserHouseholdData | undefined) ?? { currentHouseholdId: null, householdIds: [] }
       const householdId = data.currentHouseholdId
 
+      if (!householdId) {
+        if (householdUnsubscribe) {
+          householdUnsubscribe()
+          householdUnsubscribe = undefined
+        }
+        currentHouseholdId = null
+        if (!isSameHousehold(lastNotifiedHousehold, null)) {
+          lastNotifiedHousehold = null
+          callback(null)
+        }
+        return
+      }
+
+      if (householdId === currentHouseholdId && householdUnsubscribe) {
+        return
+      }
+
       if (householdUnsubscribe) {
         householdUnsubscribe()
         householdUnsubscribe = undefined
       }
-
-      if (!householdId) {
-        callback(null)
-        return
-      }
+      currentHouseholdId = householdId
 
       const householdRef = doc(firestore, 'households', householdId)
       householdUnsubscribe = onSnapshot(
         householdRef,
-        { includeMetadataChanges: true },
         (householdSnap) => {
-          if (householdSnap.metadata.hasPendingWrites) {
+          if (!householdSnap.exists()) {
+            currentHouseholdId = null
+            if (!isSameHousehold(lastNotifiedHousehold, null)) {
+              lastNotifiedHousehold = null
+              callback(null)
+            }
             return
           }
 
-          if (!householdSnap.exists()) {
-            callback(null)
+          const nextHousehold = { id: householdSnap.id, ...(householdSnap.data() as Omit<Household, 'id'>) }
+          if (isSameHousehold(lastNotifiedHousehold, nextHousehold)) {
             return
           }
-          callback({ id: householdSnap.id, ...(householdSnap.data() as Omit<Household, 'id'>) })
+
+          lastNotifiedHousehold = nextHousehold
+          callback(nextHousehold)
         },
         handleError,
       )
