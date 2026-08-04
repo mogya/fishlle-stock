@@ -206,3 +206,18 @@ ROLE
 roles/datastore.indexAdmin
 roles/firebaserules.admin
 ```
+
+引き続きエラーになっていたので権限を足した
+
+```
+mogya@itamen:~/develop/fishlle-stock$ gcloud projects get-iam-policy fishlle-stock-mogya --flatten="bindings[].members" --filter="bindings.members=serviceAccount:github-action-1314670210@fishlle-stock-mogya-staging.iam.gserviceaccount.com" --format="table(bindings.role)"
+ROLE
+roles/cloudfunctions.developer
+roles/datastore.indexAdmin
+roles/firebaseauth.admin
+roles/firebasehosting.admin
+roles/firebaserules.admin
+roles/run.viewer
+roles/serviceusage.apiKeysViewer
+roles/serviceusage.serviceUsageConsumer
+```
