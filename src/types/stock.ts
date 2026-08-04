@@ -6,6 +6,7 @@ export type StockItem = {
   name: string
   remainingCount: number
   receivedDate: DateString
+  memo: string
   createdAt: string
   updatedAt: string
   createdBy?: string

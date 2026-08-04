@@ -14,6 +14,7 @@ export function createStockItem(params: CreateStockItemParams): StockItem {
     name: params.name,
     remainingCount: params.count,
     receivedDate: params.receivedDate,
+    memo: '',
     createdAt: now,
     updatedAt: now,
   }

@@ -23,6 +23,7 @@ describe('createStockItem', () => {
       name: 'さば',
       remainingCount: 4,
       receivedDate: '2026-08-03',
+      memo: '',
       createdAt: '2026-08-03T09:00:00.000Z',
       updatedAt: '2026-08-03T09:00:00.000Z',
     })
