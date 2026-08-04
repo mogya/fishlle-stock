@@ -69,6 +69,18 @@ service cloud.firestore {
       return count is int && count >= 0 && count <= 99;
     }
 
+    function itemUpdateRequiredFields() {
+      return [
+        'name',
+        'remainingCount',
+        'receivedDate',
+        'createdAt',
+        'updatedAt',
+        'createdBy',
+        'updatedBy',
+      ];
+    }
+
     function hasRequiredItemFields(data) {
       return data.keys().hasAll(itemAllowedFields());
     }
@@ -81,6 +93,16 @@ service cloud.firestore {
       return isValidItemName(data.name) &&
         isValidReceivedDate(data.receivedDate) &&
         isValidMemo(data.memo) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        data.createdBy is string &&
+        data.updatedBy is string;
+    }
+
+    function isValidItemUpdateCommonFields(data) {
+      return isValidItemName(data.name) &&
+        isValidReceivedDate(data.receivedDate) &&
+        (data.memo == null || isValidMemo(data.memo)) &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp &&
         data.createdBy is string &&
@@ -100,9 +122,9 @@ service cloud.firestore {
     }
 
     function isValidItemUpdate() {
-      return hasRequiredItemFields(request.resource.data) &&
+      return request.resource.data.keys().hasAll(itemUpdateRequiredFields()) &&
         hasOnlyAllowedItemFields(request.resource.data) &&
-        isValidItemCommonFields(request.resource.data) &&
+        isValidItemUpdateCommonFields(request.resource.data) &&
         isValidRemainingCountForUpdate(request.resource.data.remainingCount) &&
         request.resource.data.createdAt == resource.data.createdAt &&
         request.resource.data.createdBy == resource.data.createdBy &&

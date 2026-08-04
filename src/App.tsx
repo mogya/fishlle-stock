@@ -99,18 +99,11 @@ function App() {
   }, [stockItems, selectedItemId])
 
   useEffect(() => {
-    const item = stockItems.find((i) => i.id === selectedItemId)
-    if (!item) return
-    if (
-      item.remainingCount !== detailRemainingCount ||
-      item.receivedDate !== detailReceivedDate ||
-      item.memo !== detailMemo
-    ) {
-      setDetailRemainingCount(item.remainingCount)
-      setDetailReceivedDate(item.receivedDate)
-      setDetailMemo(item.memo)
-    }
-  }, [stockItems, selectedItemId, detailRemainingCount, detailReceivedDate, detailMemo])
+    if (!selectedItem) return
+    setDetailRemainingCount(selectedItem.remainingCount)
+    setDetailReceivedDate(selectedItem.receivedDate)
+    setDetailMemo(selectedItem.memo)
+  }, [selectedItem])
 
   const handleSignIn = async () => {
     setError(null)
