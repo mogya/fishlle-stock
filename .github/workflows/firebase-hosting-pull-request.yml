@@ -9,6 +9,12 @@ concurrency:
   group: preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+# action-hosting-deploy が check run 作成と PR コメントを行うために必要
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   build_and_preview:
     # fork からの PR では secrets が使えないため同一リポジトリの PR に限定する
