@@ -14,6 +14,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_FIREBASE_ENV: production
       - name: Prepare Firebase service account
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_FISHLLE_STOCK_MOGYA }}' > "$RUNNER_TEMP/firebase-service-account.json"

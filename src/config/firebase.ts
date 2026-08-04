@@ -1,16 +1,35 @@
 import { initializeDevelopmentFirebase } from './firebase.development'
+import { initializeStagingFirebase } from './firebase.staging'
 import { initializeProductionFirebase } from './firebase.production'
 import type { FirebaseServices } from './firebase.base'
 
 let services: FirebaseServices | null = null
-const isDevelopment = import.meta.env.DEV
+
+function resolveTarget(): 'development' | 'staging' | 'production' {
+  if (import.meta.env.DEV) {
+    return 'development'
+  }
+  if (import.meta.env.VITE_FIREBASE_ENV === 'staging') {
+    return 'staging'
+  }
+  return 'production'
+}
 
 export function initializeFirebase(): FirebaseServices {
   if (services) {
     return services
   }
 
-  services = isDevelopment ? initializeDevelopmentFirebase() : initializeProductionFirebase()
+  switch (resolveTarget()) {
+    case 'development':
+      services = initializeDevelopmentFirebase()
+      break
+    case 'staging':
+      services = initializeStagingFirebase()
+      break
+    default:
+      services = initializeProductionFirebase()
+  }
   return services
 }
 
