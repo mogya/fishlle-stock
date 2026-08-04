@@ -108,7 +108,7 @@ describe('App', () => {
       expect(screen.getByRole('button', { name: '更新' })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: '食べた' }))
+    await user.click(screen.getByRole('button', { name: '食べた(一個減らす)' }))
     await waitFor(() => {
       expect(screen.getByLabelText('残数')).toHaveValue(1)
     })
@@ -123,7 +123,7 @@ describe('App', () => {
       expect(screen.getByLabelText('残数')).toHaveValue(1)
     })
 
-    await user.click(screen.getByRole('button', { name: '食べた' }))
+    await user.click(screen.getByRole('button', { name: '食べた(一個減らす)' }))
     await waitFor(() => {
       expect(screen.getByLabelText('残数')).toHaveValue(0)
     })
@@ -158,10 +158,10 @@ describe('App', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'household を作成' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'リストを作成' })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: 'household を作成' }))
+    await user.click(screen.getByRole('button', { name: 'リストを作成' }))
 
     await waitFor(() => {
       expect(householdRepository.createHouseholdForUser).toHaveBeenCalledWith(mockUser)

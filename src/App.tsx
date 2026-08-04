@@ -81,11 +81,11 @@ function App() {
       (items) => setStockItems(items),
       (err) => setError(err.message),
     )
-  }, [household])
+  }, [household?.id])
 
   useEffect(() => {
     setInviteCode(null)
-  }, [authUser, household])
+  }, [authUser?.uid, household?.id])
 
   const sortedStockItems = useMemo(() => {
     return [...stockItems]
@@ -137,7 +137,7 @@ function App() {
       setIsLoading(true)
       await createHouseholdForUser(authUser)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'household の作成に失敗しました')
+      setError(err instanceof Error ? err.message : 'リストの作成に失敗しました')
     } finally {
       setIsLoading(false)
     }
@@ -269,7 +269,7 @@ function App() {
         <section className="hero">
           <p className="eyebrow">Fishlle Stock</p>
           <h1>フィシュルストック</h1>
-          <p>フィシュルの冷凍在庫をスマホでさっと確認するためのアプリです。</p>
+          <p>家にあるフィシュルをスマホでさっと確認するためのアプリです。</p>
         </section>
         <section className="card">
           <h2>ログイン</h2>
@@ -290,10 +290,10 @@ function App() {
           <h1>フィシュルストック</h1>
         </section>
         <section className="card">
-          <h2>household を作成</h2>
-          <p>新しい household を作り、在庫を登録します。</p>
+          <h2>リストを作成</h2>
+          <p>新しいリストを作り、フィシュルを登録します。</p>
           <button type="button" className="primary-button" onClick={handleCreateHousehold} disabled={isLoading}>
-            household を作成
+            リストを作成
           </button>
         </section>
         <section className="card">
@@ -370,7 +370,7 @@ function App() {
               onClick={() => handleEat(selectedItem.id)}
               disabled={isLoading || selectedItem.remainingCount <= 0}
             >
-              食べた
+              食べた(一個減らす)
             </button>
             <button
               type="button"
@@ -391,11 +391,43 @@ function App() {
       <section className="hero">
         <p className="eyebrow">Fishlle Stock</p>
         <h1>フィシュルストック</h1>
-        <p>フィシュルの冷凍在庫をスマホでさっと確認するためのアプリです。</p>
+        <p>家にあるフィシュルをスマホでさっと確認するためのアプリです。</p>
+      </section>
+
+      <section className="card stock-list">
+        <h2>フィシュルリスト</h2>
+        {sortedStockItems.length === 0 ? (
+          <p className="empty-message">まだフィシュルが登録されていません。</p>
+        ) : (
+          <ul>
+            {sortedStockItems.map((item) => (
+              <li
+                key={item.id}
+                className="stock-item"
+                onClick={() => handleSelectItem(item.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleSelectItem(item.id)
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="stock-info">
+                  <span className="stock-name">{item.name}</span>
+                  <span className="stock-meta">
+                    残数 <strong>{item.remainingCount}</strong> · 届いた日 {formatDate(item.receivedDate)}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="card">
-        <h2>在庫を一括追加</h2>
+        <h2>フィシュルを一括追加</h2>
         <form className="add-form" onSubmit={handleSubmit}>
           <label className="form-field">
             <span className="form-label">届いた日</span>
@@ -423,38 +455,6 @@ function App() {
             登録する
           </button>
         </form>
-      </section>
-
-      <section className="card stock-list">
-        <h2>在庫一覧</h2>
-        {sortedStockItems.length === 0 ? (
-          <p className="empty-message">まだ在庫が登録されていません。</p>
-        ) : (
-          <ul>
-            {sortedStockItems.map((item) => (
-              <li
-                key={item.id}
-                className="stock-item"
-                onClick={() => handleSelectItem(item.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    handleSelectItem(item.id)
-                  }
-                }}
-                role="button"
-                tabIndex={0}
-              >
-                <div className="stock-info">
-                  <span className="stock-name">{item.name}</span>
-                  <span className="stock-meta">
-                    残数 <strong>{item.remainingCount}</strong> · 届いた日 {formatDate(item.receivedDate)}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </section>
 
       {authUser.uid === household.ownerUid && (
