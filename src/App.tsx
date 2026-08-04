@@ -394,37 +394,6 @@ function App() {
         <p>家にあるフィシュルをスマホでさっと確認するためのアプリです。</p>
       </section>
 
-      <section className="card">
-        <h2>フィシュルを一括追加</h2>
-        <form className="add-form" onSubmit={handleSubmit}>
-          <label className="form-field">
-            <span className="form-label">届いた日</span>
-            <input
-              type="date"
-              value={receivedDate}
-              onChange={(e) => setReceivedDate(e.target.value)}
-              required
-            />
-          </label>
-          <label className="form-field">
-            <span className="form-label">注文テキスト</span>
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder={`中華風黒酢マリネ(生食用)：1\nごまだれ(生食用)：1\n梅みぞれ煮（加熱用）：2`}
-              rows={6}
-            />
-          </label>
-          <p className="input-hint">
-            商品名と数量を「：」か「:」で区切って入力してください。空行は無視されます。
-          </p>
-          {error && <p className="error-message">{error}</p>}
-          <button type="submit" className="primary-button" disabled={isLoading}>
-            登録する
-          </button>
-        </form>
-      </section>
-
       <section className="card stock-list">
         <h2>フィシュルリスト</h2>
         {sortedStockItems.length === 0 ? (
@@ -455,6 +424,37 @@ function App() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="card">
+        <h2>フィシュルを一括追加</h2>
+        <form className="add-form" onSubmit={handleSubmit}>
+          <label className="form-field">
+            <span className="form-label">届いた日</span>
+            <input
+              type="date"
+              value={receivedDate}
+              onChange={(e) => setReceivedDate(e.target.value)}
+              required
+            />
+          </label>
+          <label className="form-field">
+            <span className="form-label">注文テキスト</span>
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder={`中華風黒酢マリネ(生食用)：1\nごまだれ(生食用)：1\n梅みぞれ煮（加熱用）：2`}
+              rows={6}
+            />
+          </label>
+          <p className="input-hint">
+            商品名と数量を「：」か「:」で区切って入力してください。空行は無視されます。
+          </p>
+          {error && <p className="error-message">{error}</p>}
+          <button type="submit" className="primary-button" disabled={isLoading}>
+            登録する
+          </button>
+        </form>
       </section>
 
       {authUser.uid === household.ownerUid && (
