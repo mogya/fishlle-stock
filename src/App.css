@@ -139,6 +139,11 @@ button {
   gap: 12px;
   padding: 14px 0;
   border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+}
+
+.stock-item:hover {
+  background: #f9fafb;
 }
 
 .stock-item:last-child {
@@ -207,4 +212,23 @@ button {
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.detail-name {
+  font-size: 22px;
+  margin: 0 0 20px;
+  word-break: break-word;
+}
+
+.detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }

@@ -8,7 +8,7 @@ import {
   type Household,
 } from './lib/householdRepository'
 import { createInvite } from './lib/inviteRepository'
-import { addStockItems, eatStockItem, subscribeStockItems } from './lib/stockRepository'
+import { addStockItems, eatStockItem, subscribeStockItems, updateStockItem } from './lib/stockRepository'
 import { createStockItem } from './lib/stockItemFactory'
 import { parseStockText } from './lib/stockParser'
 import type { StockItem } from './types/stock'
@@ -46,6 +46,9 @@ function App() {
   const [inviteCode, setInviteCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+  const [detailRemainingCount, setDetailRemainingCount] = useState<number | ''>('')
+  const [detailReceivedDate, setDetailReceivedDate] = useState<string>('')
 
 
   useEffect(() => {
@@ -89,6 +92,19 @@ function App() {
       .filter((item) => item.remainingCount > 0)
       .sort((a, b) => a.receivedDate.localeCompare(b.receivedDate))
   }, [stockItems])
+
+  const selectedItem = useMemo(() => {
+    return stockItems.find((item) => item.id === selectedItemId) ?? null
+  }, [stockItems, selectedItemId])
+
+  useEffect(() => {
+    const item = stockItems.find((i) => i.id === selectedItemId)
+    if (!item) return
+    if (item.remainingCount !== detailRemainingCount || item.receivedDate !== detailReceivedDate) {
+      setDetailRemainingCount(item.remainingCount)
+      setDetailReceivedDate(item.receivedDate)
+    }
+  }, [stockItems, selectedItemId, detailRemainingCount, detailReceivedDate])
 
   const handleSignIn = async () => {
     setError(null)
@@ -172,11 +188,48 @@ function App() {
   }
 
   const handleEat = async (id: string) => {
-    if (!authUser || !household) return
+    if (!authUser || !household || !selectedItem || selectedItem.remainingCount <= 0) return
     setError(null)
     try {
       setIsLoading(true)
       await eatStockItem(household.id, id, authUser)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '更新に失敗しました')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSelectItem = (id: string) => {
+    setSelectedItemId(id)
+    setError(null)
+  }
+
+  const handleBack = () => {
+    setSelectedItemId(null)
+    setError(null)
+  }
+
+  const handleUpdate = async () => {
+    if (!authUser || !household || !selectedItem) return
+    const count = detailRemainingCount === '' ? 0 : Number(detailRemainingCount)
+    if (!Number.isInteger(count) || count < 0 || count > 99) {
+      setError('残数は0〜99の整数を入力してください')
+      return
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(detailReceivedDate)) {
+      setError('届いた日を正しく入力してください')
+      return
+    }
+    setError(null)
+    setIsLoading(true)
+    try {
+      await updateStockItem(
+        household.id,
+        selectedItem.id,
+        { remainingCount: count, receivedDate: detailReceivedDate },
+        authUser,
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : '更新に失敗しました')
     } finally {
@@ -269,6 +322,70 @@ function App() {
     )
   }
 
+  if (selectedItem) {
+    return (
+      <main className="app-shell">
+        <section className="hero">
+          <p className="eyebrow">Fishlle Stock</p>
+          <h1>在庫詳細</h1>
+        </section>
+
+        <section className="card stock-detail">
+          <h2 className="detail-name">{selectedItem.name}</h2>
+          <div className="detail-form">
+            <label className="form-field">
+              <span className="form-label">残数</span>
+              <input
+                type="number"
+                min={0}
+                max={99}
+                step={1}
+                value={detailRemainingCount}
+                onChange={(e) => setDetailRemainingCount(e.target.value === '' ? '' : Number(e.target.value))}
+              />
+            </label>
+            <label className="form-field">
+              <span className="form-label">届いた日</span>
+              <input
+                type="date"
+                value={detailReceivedDate}
+                onChange={(e) => setDetailReceivedDate(e.target.value)}
+                required
+              />
+            </label>
+            {error && <p className="error-message">{error}</p>}
+            <button
+              type="button"
+              className="primary-button"
+              onClick={handleUpdate}
+              disabled={isLoading}
+            >
+              更新
+            </button>
+          </div>
+          <div className="detail-actions">
+            <button
+              type="button"
+              className="eat-button"
+              onClick={() => handleEat(selectedItem.id)}
+              disabled={isLoading || selectedItem.remainingCount <= 0}
+            >
+              食べた
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handleBack}
+              disabled={isLoading}
+            >
+              戻る
+            </button>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main className="app-shell">
       <section className="hero">
@@ -315,21 +432,25 @@ function App() {
         ) : (
           <ul>
             {sortedStockItems.map((item) => (
-              <li key={item.id} className="stock-item">
+              <li
+                key={item.id}
+                className="stock-item"
+                onClick={() => handleSelectItem(item.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleSelectItem(item.id)
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
                 <div className="stock-info">
                   <span className="stock-name">{item.name}</span>
                   <span className="stock-meta">
                     残数 <strong>{item.remainingCount}</strong> · 届いた日 {formatDate(item.receivedDate)}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="eat-button"
-                  onClick={() => handleEat(item.id)}
-                  disabled={isLoading}
-                >
-                  食べた
-                </button>
               </li>
             ))}
           </ul>

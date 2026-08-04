@@ -82,3 +82,19 @@ export async function eatStockItem(householdId: string, itemId: string, user: Us
     updatedBy: user.uid,
   })
 }
+
+export async function updateStockItem(
+  householdId: string,
+  itemId: string,
+  data: { remainingCount: number; receivedDate: string },
+  user: User,
+): Promise<void> {
+  const { firestore } = getFirebaseServices()
+  const ref = doc(firestore, 'households', householdId, 'items', itemId)
+  await updateDoc(ref, {
+    remainingCount: data.remainingCount,
+    receivedDate: data.receivedDate,
+    updatedAt: serverTimestamp(),
+    updatedBy: user.uid,
+  })
+}
