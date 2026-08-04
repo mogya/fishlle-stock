@@ -2,7 +2,6 @@ import {
   collection,
   doc,
   increment,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -11,6 +10,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { getFirebaseServices } from '../config/firebase'
+import { subscribeQueryWithPermissionRetry } from './firestoreListener'
 import type { StockItem } from '../types/stock'
 import type { User } from './auth'
 
@@ -37,6 +37,8 @@ function convertItem(id: string, data: Record<string, unknown>): StockItem {
   }
 }
 
+// household 作成/参加直後は members のサーバー確定前に items 購読が走り、
+// 一時的に permission-denied になることがある。共通ヘルパーで数回リトライして自己回復させる。
 export function subscribeStockItems(
   householdId: string,
   callback: (items: StockItem[]) => void,
@@ -45,7 +47,8 @@ export function subscribeStockItems(
   const { firestore } = getFirebaseServices()
   const itemsRef = collection(firestore, 'households', householdId, 'items')
   const q = query(itemsRef, orderBy('receivedDate', 'asc'))
-  return onSnapshot(
+
+  return subscribeQueryWithPermissionRetry(
     q,
     (snapshot) => {
       const items = snapshot.docs.map((d) => convertItem(d.id, d.data() as Record<string, unknown>))

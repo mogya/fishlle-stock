@@ -7,6 +7,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { getFirebaseServices } from '../config/firebase'
+import { subscribeDocWithPermissionRetry } from './firestoreListener'
 import type { Household, HouseholdInvite, HouseholdMember } from '../types/household'
 import type { User } from './auth'
 
@@ -106,6 +107,8 @@ export function subscribeHouseholdForUser(
   const { firestore } = getFirebaseServices()
   const userRef = doc(firestore, 'users', uid)
   let householdUnsubscribe: (() => void) | undefined
+  // undefined は未取得を表す。null(リスト未所属) と区別し、初回スナップショットは必ず通す。
+  let currentHouseholdId: string | null | undefined
 
   const handleError = onError ?? (() => undefined)
 
@@ -113,7 +116,15 @@ export function subscribeHouseholdForUser(
     userRef,
     (userSnap) => {
       const data = (userSnap.data() as UserHouseholdData | undefined) ?? { currentHouseholdId: null, householdIds: [] }
-      const householdId = data.currentHouseholdId
+      // フィールド欠落時の undefined を null に正規化する。初期状態の undefined(未取得)と
+      // 衝突すると初回スナップショットが通らず、ローディングのまま固まるため。
+      const householdId = data.currentHouseholdId ?? null
+
+      // 同じ household を購読中なら張り替えない(ローカル反映とサーバー確定で二重発火するため)。
+      if (householdId === currentHouseholdId) {
+        return
+      }
+      currentHouseholdId = householdId
 
       if (householdUnsubscribe) {
         householdUnsubscribe()
@@ -126,7 +137,9 @@ export function subscribeHouseholdForUser(
       }
 
       const householdRef = doc(firestore, 'households', householdId)
-      householdUnsubscribe = onSnapshot(
+      // household 作成/参加直後はサーバー確定前に読み取りが走り一時的に permission-denied
+      // になることがあるため、リトライ付きの購読で自己回復させる。
+      householdUnsubscribe = subscribeDocWithPermissionRetry(
         householdRef,
         (householdSnap) => {
           if (!householdSnap.exists()) {
