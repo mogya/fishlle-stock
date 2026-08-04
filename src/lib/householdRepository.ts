@@ -116,7 +116,9 @@ export function subscribeHouseholdForUser(
     userRef,
     (userSnap) => {
       const data = (userSnap.data() as UserHouseholdData | undefined) ?? { currentHouseholdId: null, householdIds: [] }
-      const householdId = data.currentHouseholdId
+      // フィールド欠落時の undefined を null に正規化する。初期状態の undefined(未取得)と
+      // 衝突すると初回スナップショットが通らず、ローディングのまま固まるため。
+      const householdId = data.currentHouseholdId ?? null
 
       // 同じ household を購読中なら張り替えない(ローカル反映とサーバー確定で二重発火するため)。
       if (householdId === currentHouseholdId) {
