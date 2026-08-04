@@ -221,3 +221,38 @@ roles/run.viewer
 roles/serviceusage.apiKeysViewer
 roles/serviceusage.serviceUsageConsumer
 ```
+
+権限付与先を間違えていた
+
+```
+mogya@itamen:~/develop/fishlle-stock$ gcloud projects add-iam-policy-binding fishlle-stock-mogya-staging \
+  --member="serviceAccount:github-action-1314670210@fishlle-stock-mogya-staging.iam.gserviceaccount.com" \
+  --role="roles/firebaserules.admin"
+
+Updated IAM policy for project [fishlle-stock-mogya-staging].
+:
+mogya@itamen:~/develop/fishlle-stock$ gcloud projects add-iam-policy-binding fishlle-stock-mogya-staging \
+  --member="serviceAccount:github-action-1314670210@fishlle-stock-mogya-staging.iam.gserviceaccount.com" \
+  --role="roles/datastore.indexAdmin"
+Updated IAM policy for project [fishlle-stock-mogya-staging].
+:
+mogya@itamen:~/develop/fishlle-stock$ gcloud projects get-iam-policy fishlle-stock-mogya-staging --flatten="bindings[].members" --filter="bindings.members=serviceAccount:github-action-1314670210@fishlle
+-stock-mogya-staging.iam.gserviceaccount.com" --format="table(bindings.role)"
+ROLE
+roles/cloudfunctions.developer
+roles/datastore.indexAdmin
+roles/firebaseauth.admin
+roles/firebasehosting.admin
+roles/firebaserules.admin
+roles/run.viewer
+roles/serviceusage.apiKeysViewer
+roles/serviceusage.serviceUsageConsumer
+```
+
+あわせて、誤付与した権限の削除を実施した
+
+```
+mogya@itamen:~/develop/fishlle-stock$ gcloud projects get-iam-policy fishlle-stock-mogya --flatten="bindings[].members" --filter="bindings.members=serviceAccount:github-action-1314670210@fishlle-stock-m
+ogya-staging.iam.gserviceaccount.com" --format="table(bindings.role)"
+mogya@itamen:~/develop/fishlle-stock$ 
+```
