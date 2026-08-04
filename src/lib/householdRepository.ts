@@ -111,7 +111,12 @@ export function subscribeHouseholdForUser(
 
   const unsubscribeUser = onSnapshot(
     userRef,
+    { includeMetadataChanges: true },
     (userSnap) => {
+      if (userSnap.metadata.hasPendingWrites) {
+        return
+      }
+
       const data = (userSnap.data() as UserHouseholdData | undefined) ?? { currentHouseholdId: null, householdIds: [] }
       const householdId = data.currentHouseholdId
 
@@ -128,7 +133,12 @@ export function subscribeHouseholdForUser(
       const householdRef = doc(firestore, 'households', householdId)
       householdUnsubscribe = onSnapshot(
         householdRef,
+        { includeMetadataChanges: true },
         (householdSnap) => {
+          if (householdSnap.metadata.hasPendingWrites) {
+            return
+          }
+
           if (!householdSnap.exists()) {
             callback(null)
             return
