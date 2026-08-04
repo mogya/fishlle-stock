@@ -164,3 +164,45 @@ secret名 は `FIREBASE_SERVICE_ACCOUNT_FISHLLE_STOCK_MOGYA_STAGING`となって
 
 `firebase-hosting-merge.yml` / `firebase-hosting-pull-request.yml`の変更もなし
 
+# サービスアカウントに権限を追加する
+
+firestoreへのデプロイが失敗した。
+https://github.com/mogya/fishlle-stock/actions/runs/30889137032/job/91926900700?pr=16
+
+```
+Run npm run deploy:firestore -- --project fishlle-stock-mogya-staging
+
+> fishlle-stock@0.0.0 deploy:firestore
+> firebase deploy --only firestore --project fishlle-stock-mogya-staging
+
+
+=== Deploying to 'fishlle-stock-mogya-staging'...
+
+i  deploying firestore
+i  firestore: ensuring required API firestore.googleapis.com is enabled...
+✔  firestore: required API firestore.googleapis.com is enabled
+i  firestore: ensuring required API firestore.googleapis.com is enabled...
+i  firestore: reading indexes from firestore.indexes.json...
+i  cloud.firestore: checking firestore.rules for compilation errors...
+
+Error: Request to https://firebaserules.googleapis.com/v1/projects/fishlle-stock-mogya-staging:test had HTTP Error: 403, The caller does not have permission
+Error: Process completed with exit code 1.
+```
+
+権限を追加
+
+```
+mogya@itamen:~/develop/fishlle-stock$ gcloud projects add-iam-policy-binding fishlle-stock-mogya --member="serviceAccount:github-action-1314670210@fishlle-stock-mogya-staging.iam.gserviceaccount.com" --role="roles/firebaserules.admin"
+Updated IAM policy for project [fishlle-stock-mogya].
+bindings:
+:
+version: 1
+mogya@itamen:~/develop/fishlle-stock$ gcloud projects add-iam-policy-binding fishlle-stock-mogya --member="serviceAccount:github-action-1314670210@fishlle-stock-mogya-staging.iam.gserviceaccount.com" --role="roles/datastore.indexAdmin"
+Updated IAM policy for project [fishlle-stock-mogya].
+bindings:
+:
+mogya@itamen:~/develop/fishlle-stock$ gcloud projects get-iam-policy fishlle-stock-mogya --flatten="bindings[].members" --filter="bindings.members=serviceAccount:github-action-1314670210@fishlle-stock-mogya-staging.iam.gserviceaccount.com" --format="table(bindings.role)"
+ROLE
+roles/datastore.indexAdmin
+roles/firebaserules.admin
+```
