@@ -5,6 +5,7 @@ import {
   type FirestoreError,
   type Query,
   type QuerySnapshot,
+  type SnapshotMetadata,
 } from 'firebase/firestore'
 
 // household 作成/参加直後は関連ドキュメントがサーバー確定する前に購読が走り、
@@ -13,7 +14,7 @@ import {
 const PERMISSION_RETRY_LIMIT = 5
 const PERMISSION_RETRY_BASE_MS = 300
 
-function subscribeWithPermissionRetry<TSnapshot>(
+function subscribeWithPermissionRetry<TSnapshot extends { metadata: SnapshotMetadata }>(
   subscribe: (
     onNext: (snapshot: TSnapshot) => void,
     onError: (error: FirestoreError) => void,
@@ -27,9 +28,17 @@ function subscribeWithPermissionRetry<TSnapshot>(
   let cancelled = false
 
   const start = () => {
+    if (unsubscribe) {
+      unsubscribe()
+      unsubscribe = undefined
+    }
     unsubscribe = subscribe(
       (snapshot) => {
-        retryCount = 0
+        // キャッシュ配信(fromCache)でリセットすると permission-denied 継続時に上限が働かず
+        // 無限リトライになるため、サーバー確定スナップショットのときだけリセットする。
+        if (!snapshot.metadata.fromCache) {
+          retryCount = 0
+        }
         onNext(snapshot)
       },
       (error) => {
