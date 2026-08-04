@@ -7,6 +7,7 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { getFirebaseServices } from '../config/firebase'
+import { subscribeDocWithPermissionRetry } from './firestoreListener'
 import type { Household, HouseholdInvite, HouseholdMember } from '../types/household'
 import type { User } from './auth'
 
@@ -126,7 +127,9 @@ export function subscribeHouseholdForUser(
       }
 
       const householdRef = doc(firestore, 'households', householdId)
-      householdUnsubscribe = onSnapshot(
+      // household 作成/参加直後はサーバー確定前に読み取りが走り一時的に permission-denied
+      // になることがあるため、リトライ付きの購読で自己回復させる。
+      householdUnsubscribe = subscribeDocWithPermissionRetry(
         householdRef,
         (householdSnap) => {
           if (!householdSnap.exists()) {
