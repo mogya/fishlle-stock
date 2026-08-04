@@ -102,7 +102,7 @@ service cloud.firestore {
     function isValidItemUpdateCommonFields(data) {
       return isValidItemName(data.name) &&
         isValidReceivedDate(data.receivedDate) &&
-        (data.memo == null || isValidMemo(data.memo)) &&
+        (!data.keys().hasAll(['memo']) || isValidMemo(data.memo)) &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp &&
         data.createdBy is string &&
