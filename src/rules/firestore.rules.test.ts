@@ -258,6 +258,32 @@ describe('Firestore rules', () => {
     )
   })
 
+  it('allows member to update legacy item without memo field', async () => {
+    await seedHousehold('h6j', 'owner-1', ['member-1'])
+    await testEnv?.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore()
+      const now = Timestamp.now()
+      await setDoc(doc(db, 'households/h6j/items/item-1'), {
+        name: '中華風黒酢マリネ(生食用)',
+        remainingCount: 2,
+        receivedDate: '2026-08-03',
+        createdAt: now,
+        updatedAt: now,
+        createdBy: 'member-1',
+        updatedBy: 'member-1',
+      })
+    })
+    const itemRef = doc(firestoreFor('member-1'), 'households/h6j/items/item-1')
+
+    await assertSucceeds(
+      updateDoc(itemRef, {
+        remainingCount: 1,
+        updatedAt: serverTimestamp(),
+        updatedBy: 'member-1',
+      }),
+    )
+  })
+
   it('allows member to update item with remainingCount 0', async () => {
     await seedHousehold('h6e', 'owner-1', ['member-1'])
     await seedItem('h6e', 'item-1', 'member-1')
