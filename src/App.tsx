@@ -98,11 +98,13 @@ function App() {
   }, [stockItems, selectedItemId])
 
   useEffect(() => {
-    if (selectedItem) {
-      setDetailRemainingCount(selectedItem.remainingCount)
-      setDetailReceivedDate(selectedItem.receivedDate)
+    const item = stockItems.find((i) => i.id === selectedItemId)
+    if (!item) return
+    if (item.remainingCount !== detailRemainingCount || item.receivedDate !== detailReceivedDate) {
+      setDetailRemainingCount(item.remainingCount)
+      setDetailReceivedDate(item.receivedDate)
     }
-  }, [selectedItem])
+  }, [stockItems, selectedItemId, detailRemainingCount, detailReceivedDate])
 
   const handleSignIn = async () => {
     setError(null)
@@ -186,7 +188,7 @@ function App() {
   }
 
   const handleEat = async (id: string) => {
-    if (!authUser || !household) return
+    if (!authUser || !household || !selectedItem || selectedItem.remainingCount <= 0) return
     setError(null)
     try {
       setIsLoading(true)
@@ -200,17 +202,23 @@ function App() {
 
   const handleSelectItem = (id: string) => {
     setSelectedItemId(id)
+    setError(null)
   }
 
   const handleBack = () => {
     setSelectedItemId(null)
+    setError(null)
   }
 
   const handleUpdate = async () => {
     if (!authUser || !household || !selectedItem) return
     const count = detailRemainingCount === '' ? 0 : Number(detailRemainingCount)
-    if (Number.isNaN(count) || count < 0) {
-      setError('残数は0以上の数値を入力してください')
+    if (!Number.isInteger(count) || count < 0 || count > 99) {
+      setError('残数は0〜99の整数を入力してください')
+      return
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(detailReceivedDate)) {
+      setError('届いた日を正しく入力してください')
       return
     }
     setError(null)
@@ -330,6 +338,8 @@ function App() {
               <input
                 type="number"
                 min={0}
+                max={99}
+                step={1}
                 value={detailRemainingCount}
                 onChange={(e) => setDetailRemainingCount(e.target.value === '' ? '' : Number(e.target.value))}
               />
@@ -340,6 +350,7 @@ function App() {
                 type="date"
                 value={detailReceivedDate}
                 onChange={(e) => setDetailReceivedDate(e.target.value)}
+                required
               />
             </label>
             {error && <p className="error-message">{error}</p>}
@@ -357,7 +368,7 @@ function App() {
               type="button"
               className="eat-button"
               onClick={() => handleEat(selectedItem.id)}
-              disabled={isLoading}
+              disabled={isLoading || selectedItem.remainingCount <= 0}
             >
               食べた
             </button>
@@ -425,6 +436,12 @@ function App() {
                 key={item.id}
                 className="stock-item"
                 onClick={() => handleSelectItem(item.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleSelectItem(item.id)
+                  }
+                }}
                 role="button"
                 tabIndex={0}
               >
