@@ -107,6 +107,8 @@ export function subscribeHouseholdForUser(
   const { firestore } = getFirebaseServices()
   const userRef = doc(firestore, 'users', uid)
   let householdUnsubscribe: (() => void) | undefined
+  // undefined は未取得を表す。null(リスト未所属) と区別し、初回スナップショットは必ず通す。
+  let currentHouseholdId: string | null | undefined
 
   const handleError = onError ?? (() => undefined)
 
@@ -115,6 +117,12 @@ export function subscribeHouseholdForUser(
     (userSnap) => {
       const data = (userSnap.data() as UserHouseholdData | undefined) ?? { currentHouseholdId: null, householdIds: [] }
       const householdId = data.currentHouseholdId
+
+      // 同じ household を購読中なら張り替えない(ローカル反映とサーバー確定で二重発火するため)。
+      if (householdId === currentHouseholdId) {
+        return
+      }
+      currentHouseholdId = householdId
 
       if (householdUnsubscribe) {
         householdUnsubscribe()
