@@ -137,7 +137,7 @@ function App() {
       setIsLoading(true)
       await createHouseholdForUser(authUser)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'household の作成に失敗しました')
+      setError(err instanceof Error ? err.message : 'リストの作成に失敗しました')
     } finally {
       setIsLoading(false)
     }
