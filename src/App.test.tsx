@@ -25,6 +25,7 @@ vi.mock('./lib/stockRepository', () => ({
   subscribeStockItems: vi.fn(),
   addStockItems: vi.fn(),
   eatStockItem: vi.fn(),
+  updateStockItem: vi.fn(),
 }))
 
 vi.mock('./lib/inviteRepository', () => ({
@@ -86,7 +87,7 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Googleでログイン' })).toBeInTheDocument()
   })
 
-  it('adds stock items and allows decrementing until removal', async () => {
+  it('adds stock items and allows decrementing until removal from detail', async () => {
     const user = userEvent.setup()
     render(<App />)
 
@@ -102,12 +103,32 @@ describe('App', () => {
       expect(screen.getByText(/残数/)).toHaveTextContent('残数 2')
     })
 
+    await user.click(screen.getByText('さば'))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '更新' })).toBeInTheDocument()
+    })
+
     await user.click(screen.getByRole('button', { name: '食べた' }))
+    await waitFor(() => {
+      expect(screen.getByLabelText('残数')).toHaveValue(1)
+    })
+
+    await user.click(screen.getByRole('button', { name: '戻る' }))
     await waitFor(() => {
       expect(screen.getByText(/残数/)).toHaveTextContent('残数 1')
     })
 
+    await user.click(screen.getByText('さば'))
+    await waitFor(() => {
+      expect(screen.getByLabelText('残数')).toHaveValue(1)
+    })
+
     await user.click(screen.getByRole('button', { name: '食べた' }))
+    await waitFor(() => {
+      expect(screen.getByLabelText('残数')).toHaveValue(0)
+    })
+
+    await user.click(screen.getByRole('button', { name: '戻る' }))
     await waitFor(() => {
       expect(screen.queryByText('さば')).not.toBeInTheDocument()
     })
