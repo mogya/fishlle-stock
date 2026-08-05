@@ -49,6 +49,7 @@ function App() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [detailRemainingCount, setDetailRemainingCount] = useState<number | ''>('')
   const [detailReceivedDate, setDetailReceivedDate] = useState<string>('')
+  const [detailMemo, setDetailMemo] = useState<string>('')
 
 
   useEffect(() => {
@@ -98,13 +99,11 @@ function App() {
   }, [stockItems, selectedItemId])
 
   useEffect(() => {
-    const item = stockItems.find((i) => i.id === selectedItemId)
-    if (!item) return
-    if (item.remainingCount !== detailRemainingCount || item.receivedDate !== detailReceivedDate) {
-      setDetailRemainingCount(item.remainingCount)
-      setDetailReceivedDate(item.receivedDate)
-    }
-  }, [stockItems, selectedItemId, detailRemainingCount, detailReceivedDate])
+    if (!selectedItem) return
+    setDetailRemainingCount(selectedItem.remainingCount)
+    setDetailReceivedDate(selectedItem.receivedDate)
+    setDetailMemo(selectedItem.memo)
+  }, [selectedItem])
 
   const handleSignIn = async () => {
     setError(null)
@@ -221,13 +220,17 @@ function App() {
       setError('届いた日を正しく入力してください')
       return
     }
+    if (detailMemo.length > 1000) {
+      setError('メモは1000文字以内で入力してください')
+      return
+    }
     setError(null)
     setIsLoading(true)
     try {
       await updateStockItem(
         household.id,
         selectedItem.id,
-        { remainingCount: count, receivedDate: detailReceivedDate },
+        { remainingCount: count, receivedDate: detailReceivedDate, memo: detailMemo },
         authUser,
       )
     } catch (err) {
@@ -353,6 +356,15 @@ function App() {
                 required
               />
             </label>
+            <label className="form-field">
+              <span className="form-label">メモ</span>
+              <textarea
+                value={detailMemo}
+                onChange={(e) => setDetailMemo(e.target.value)}
+                placeholder="在庫に関するメモ（複数行可）"
+                rows={4}
+              />
+            </label>
             {error && <p className="error-message">{error}</p>}
             <button
               type="button"
@@ -416,6 +428,7 @@ function App() {
               >
                 <div className="stock-info">
                   <span className="stock-name">{item.name}</span>
+                  {item.memo && <span className="stock-memo">{item.memo}</span>}
                   <span className="stock-meta">
                     残数 <strong>{item.remainingCount}</strong> · 届いた日 {formatDate(item.receivedDate)}
                   </span>

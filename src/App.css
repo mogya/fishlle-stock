@@ -170,6 +170,15 @@ button {
   font-size: 14px;
 }
 
+.stock-memo {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .stock-meta strong {
   color: #2f855a;
   font-size: 18px;

@@ -30,6 +30,7 @@ function convertItem(id: string, data: Record<string, unknown>): StockItem {
     name: String(data.name),
     remainingCount: Number(data.remainingCount),
     receivedDate: String(data.receivedDate),
+    memo: data.memo != null ? String(data.memo) : '',
     createdAt: timestampToIso(data.createdAt),
     updatedAt: timestampToIso(data.updatedAt),
     createdBy: data.createdBy != null ? String(data.createdBy) : undefined,
@@ -67,6 +68,7 @@ export async function addStockItems(householdId: string, items: StockItem[], use
       name: item.name,
       remainingCount: item.remainingCount,
       receivedDate: item.receivedDate,
+      memo: item.memo,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       createdBy: user.uid,
@@ -89,7 +91,7 @@ export async function eatStockItem(householdId: string, itemId: string, user: Us
 export async function updateStockItem(
   householdId: string,
   itemId: string,
-  data: { remainingCount: number; receivedDate: string },
+  data: { remainingCount: number; receivedDate: string; memo: string },
   user: User,
 ): Promise<void> {
   const { firestore } = getFirebaseServices()
@@ -97,6 +99,7 @@ export async function updateStockItem(
   await updateDoc(ref, {
     remainingCount: data.remainingCount,
     receivedDate: data.receivedDate,
+    memo: data.memo,
     updatedAt: serverTimestamp(),
     updatedBy: user.uid,
   })

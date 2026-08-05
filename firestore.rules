@@ -38,6 +38,7 @@ service cloud.firestore {
         'name',
         'remainingCount',
         'receivedDate',
+        'memo',
         'createdAt',
         'updatedAt',
         'createdBy',
@@ -56,12 +57,28 @@ service cloud.firestore {
         date.matches('^\\d{4}-\\d{2}-\\d{2}$');
     }
 
+    function isValidMemo(memo) {
+      return memo is string && memo.size() <= 1000;
+    }
+
     function isValidRemainingCountForCreate(count) {
       return count is int && count >= 1 && count <= 99;
     }
 
     function isValidRemainingCountForUpdate(count) {
       return count is int && count >= 0 && count <= 99;
+    }
+
+    function itemUpdateRequiredFields() {
+      return [
+        'name',
+        'remainingCount',
+        'receivedDate',
+        'createdAt',
+        'updatedAt',
+        'createdBy',
+        'updatedBy',
+      ];
     }
 
     function hasRequiredItemFields(data) {
@@ -75,6 +92,17 @@ service cloud.firestore {
     function isValidItemCommonFields(data) {
       return isValidItemName(data.name) &&
         isValidReceivedDate(data.receivedDate) &&
+        isValidMemo(data.memo) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        data.createdBy is string &&
+        data.updatedBy is string;
+    }
+
+    function isValidItemUpdateCommonFields(data) {
+      return isValidItemName(data.name) &&
+        isValidReceivedDate(data.receivedDate) &&
+        (!data.keys().hasAll(['memo']) || isValidMemo(data.memo)) &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp &&
         data.createdBy is string &&
@@ -94,9 +122,9 @@ service cloud.firestore {
     }
 
     function isValidItemUpdate() {
-      return hasRequiredItemFields(request.resource.data) &&
+      return request.resource.data.keys().hasAll(itemUpdateRequiredFields()) &&
         hasOnlyAllowedItemFields(request.resource.data) &&
-        isValidItemCommonFields(request.resource.data) &&
+        isValidItemUpdateCommonFields(request.resource.data) &&
         isValidRemainingCountForUpdate(request.resource.data.remainingCount) &&
         request.resource.data.createdAt == resource.data.createdAt &&
         request.resource.data.createdBy == resource.data.createdBy &&
