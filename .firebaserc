@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "fishlle-stock-mogya"
+    "default": "fishlle-stock-mogya",
+    "production": "fishlle-stock-mogya",
+    "staging": "fishlle-stock-mogya-staging"
   }
 }
