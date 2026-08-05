@@ -32,6 +32,11 @@ vi.mock('./lib/inviteRepository', () => ({
   createInvite: vi.fn(),
 }))
 
+vi.mock('./lib/recipeRepository', () => ({
+  loadRecipes: vi.fn(() => Promise.resolve({ generatedAt: '', products: [] })),
+  findRecipeProduct: vi.fn(() => null),
+}))
+
 describe('App', () => {
   const mockUser = { uid: 'user-1', displayName: 'User One', email: 'user1@example.com' } as unknown as User
   const mockHousehold = { id: 'h1', ownerUid: 'user-1', name: 'my household' }

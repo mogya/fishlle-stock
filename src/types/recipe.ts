@@ -5,6 +5,7 @@ export type Recipe = {
 
 export type RecipeProduct = {
   name: string
+  aliases: string[]
   recipes: Recipe[]
 }
 

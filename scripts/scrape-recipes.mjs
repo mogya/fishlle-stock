@@ -1,11 +1,13 @@
 import { parseHTML } from 'linkedom'
 import { writeFile } from 'node:fs/promises'
 import { setTimeout } from 'node:timers/promises'
+import { fileURLToPath } from 'node:url'
 
 const BASE_URL = 'https://fishlle.com'
 const VARIATION_URL = `${BASE_URL}/shop/product_categories/variation`
-const OUTPUT_PATH = 'public/recipes.json'
+const OUTPUT_PATH = fileURLToPath(new URL('../public/recipes.json', import.meta.url))
 const DELAY_MS = 400
+const MAX_FLAVORS = 3
 
 async function fetchHTML(url) {
   const response = await fetch(url, {
@@ -46,35 +48,45 @@ function parseProductCategoryPage(html) {
 
   const h1 = document.querySelector('h1')
   const productName = h1?.textContent?.split('レシピ一覧')[0]?.trim()
+  if (!productName) {
+    return null
+  }
 
-  const items = Array.from(document.querySelectorAll('li'))
-    .map((li) => {
-      const link = li.querySelector('a[href^="/shop/products/recipe-"]')
-      const titleEl = li.querySelector('.recipe-name')
-      const flavorEl = li.querySelector('.flavoring__label')
-      if (!link || !titleEl || !flavorEl) return null
+  const recipes = []
+  const aliases = new Set()
 
-      const href = link.getAttribute('href')
-      const title = titleEl.textContent.trim()
-      const flavor = flavorEl.textContent.trim()
-      if (!href || !title || !flavor) return null
+  const items = document.querySelectorAll('.p-product_list__list__item')
+  for (const li of items) {
+    const link = li.querySelector('a[href^="/shop/products/recipe-"]')
+    const titleEl = li.querySelector('.recipe-name')
+    const flavorEl = li.querySelector('.flavoring__label')
+    if (!link || !titleEl || !flavorEl) continue
 
-      return {
-        title,
-        url: href.startsWith('http') ? href : `${BASE_URL}${href}`,
-        flavor,
-      }
+    const href = link.getAttribute('href')
+    const title = titleEl.textContent.trim()
+    const flavor = flavorEl.textContent.trim()
+    if (!href || !title || !flavor) continue
+
+    recipes.push({
+      title,
+      url: href.startsWith('http') ? href : `${BASE_URL}${href}`,
     })
-    .filter(Boolean)
+    aliases.add(flavor)
+  }
 
-  const flavors = [...new Set(items.map((i) => i.flavor))]
-  if (flavors.length !== 1) {
+  if (recipes.length === 0) {
+    return null
+  }
+
+  if (aliases.size > MAX_FLAVORS) {
+    console.warn(`Skipping: ${productName} has ${aliases.size} distinct flavors`)
     return null
   }
 
   return {
-    name: productName || flavors[0],
-    recipes: items.map((i) => ({ title: i.title, url: i.url })),
+    name: productName,
+    aliases: [...aliases],
+    recipes,
   }
 }
 
@@ -90,10 +102,10 @@ async function main() {
       console.log(`Fetching ${url}`)
       const html = await fetchHTML(url)
       const product = parseProductCategoryPage(html)
-      if (product && product.recipes.length > 0) {
+      if (product) {
         products.push(product)
       } else {
-        console.warn(`Skipped ${url}: not a single-flavor category`)
+        console.warn(`Skipped ${url}: no recipes or too many flavors`)
       }
     } catch (error) {
       console.error(`Error fetching ${url}:`, error.message)
