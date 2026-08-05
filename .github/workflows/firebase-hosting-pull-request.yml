@@ -30,6 +30,14 @@ jobs:
       - run: npm run build
         env:
           VITE_FIREBASE_ENV: staging
+      # 【セキュリティリスク（現時点では受け入れ可能と判断）】
+      # 生の staging サービスアカウント鍵をファイルに書き出し、その状態で
+      # PR 側で書き換え可能な `npm run deploy:firestore`(package.json のスクリプト)を実行している。
+      # push 権限者が悪意あるPRを開く／アカウントが乗っ取られた場合、この鍵を
+      # 外部へ持ち出され、staging の Firestore/Auth/Hosting 権限を保持され続ける恐れがある。
+      # (fork からのPRは if 条件と secrets 非付与で除外済み。影響範囲は staging に限定。)
+      # 個人リポジトリで push 権限者が本人のみのため現状は許容。collaborator 追加時などは
+      # rules デプロイを main マージ時の別フローへ分離すること。
       - name: Prepare Firebase service account
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_FISHLLE_STOCK_MOGYA_STAGING }}' > "$RUNNER_TEMP/firebase-service-account.json"
