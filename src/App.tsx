@@ -10,7 +10,9 @@ import {
 import { createInvite } from './lib/inviteRepository'
 import { addStockItems, eatStockItem, subscribeStockItems, updateStockItem } from './lib/stockRepository'
 import { createStockItem } from './lib/stockItemFactory'
+import { findRecipeProduct, loadRecipes } from './lib/recipeRepository'
 import { parseStockText } from './lib/stockParser'
+import type { RecipeProduct } from './types/recipe'
 import type { StockItem } from './types/stock'
 
 function getTodayDateString(): string {
@@ -50,6 +52,7 @@ function App() {
   const [detailRemainingCount, setDetailRemainingCount] = useState<number | ''>('')
   const [detailReceivedDate, setDetailReceivedDate] = useState<string>('')
   const [detailMemo, setDetailMemo] = useState<string>('')
+  const [recipeProducts, setRecipeProducts] = useState<RecipeProduct[]>([])
 
 
   useEffect(() => {
@@ -88,6 +91,12 @@ function App() {
     setInviteCode(null)
   }, [authUser?.uid, household?.id])
 
+  useEffect(() => {
+    loadRecipes()
+      .then((data) => setRecipeProducts(data.products))
+      .catch((err) => console.error('Failed to load recipes:', err))
+  }, [])
+
   const sortedStockItems = useMemo(() => {
     return [...stockItems]
       .filter((item) => item.remainingCount > 0)
@@ -97,6 +106,11 @@ function App() {
   const selectedItem = useMemo(() => {
     return stockItems.find((item) => item.id === selectedItemId) ?? null
   }, [stockItems, selectedItemId])
+
+  const matchedRecipeProduct = useMemo(() => {
+    if (!selectedItem) return null
+    return findRecipeProduct(selectedItem.name, recipeProducts)
+  }, [selectedItem, recipeProducts])
 
   useEffect(() => {
     if (!selectedItem) return
@@ -335,6 +349,20 @@ function App() {
 
         <section className="card stock-detail">
           <h2 className="detail-name">{selectedItem.name}</h2>
+          {matchedRecipeProduct && (
+            <div className="recipe-links">
+              <h3 className="recipe-links-title">このフィシュルで作れるレシピ</h3>
+              <ul className="recipe-links-list">
+                {matchedRecipeProduct.recipes.map((recipe) => (
+                  <li key={recipe.url}>
+                    <a href={recipe.url} target="_blank" rel="noopener noreferrer">
+                      {recipe.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="detail-form">
             <label className="form-field">
               <span className="form-label">残数</span>
