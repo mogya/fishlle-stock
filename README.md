@@ -57,3 +57,14 @@ npm run test:rules:emulator
 ```bash
 npm run test:rules
 ```
+
+## レシピデータの更新
+
+在庫詳細に表示する公式レシピ一覧は `public/recipes.json` に含まれています。
+`fishlle.com` のレシピカテゴリページから再取得する場合は以下を実行してください。
+
+```bash
+npm run scrape:recipes
+```
+
+実行後、生成された `public/recipes.json` をコミットしてデプロイしてください。
