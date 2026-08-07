@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "scrape:recipes": "node scripts/scrape-recipes.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
@@ -31,6 +32,7 @@
     "@vitejs/plugin-react": "^6.0.3",
     "firebase-tools": "^15.25.1",
     "jsdom": "^30.0.1",
+    "linkedom": "^0.18.13",
     "oxlint": "^1.71.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
