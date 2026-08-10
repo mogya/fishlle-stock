@@ -344,7 +344,7 @@ function App() {
       <main className="app-shell">
         <section className="hero">
           <p className="eyebrow">Fishlle Stock</p>
-          <h1>📦在庫詳細</h1>
+          <h1>🐟️フィシュル詳細</h1>
         </section>
 
         <section className="card stock-detail">
@@ -389,7 +389,7 @@ function App() {
               <textarea
                 value={detailMemo}
                 onChange={(e) => setDetailMemo(e.target.value)}
-                placeholder="在庫に関するメモ（複数行可）"
+                placeholder="フィシュルに関するメモ（複数行可）"
                 rows={4}
               />
             </label>
