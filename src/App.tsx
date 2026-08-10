@@ -92,6 +92,15 @@ function App() {
   }, [authUser?.uid, household?.id])
 
   useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      setSelectedItemId(event.state?.selectedItemId ?? null)
+      setError(null)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  useEffect(() => {
     loadRecipes()
       .then((data) => setRecipeProducts(data.products))
       .catch((err) => console.error('Failed to load recipes:', err))
@@ -214,13 +223,13 @@ function App() {
   }
 
   const handleSelectItem = (id: string) => {
+    window.history.pushState({ selectedItemId: id }, '')
     setSelectedItemId(id)
     setError(null)
   }
 
   const handleBack = () => {
-    setSelectedItemId(null)
-    setError(null)
+    window.history.back()
   }
 
   const handleUpdate = async () => {
@@ -285,11 +294,11 @@ function App() {
       <main className="app-shell">
         <section className="hero">
           <p className="eyebrow">Fishlle Stock</p>
-          <h1>フィシュルストック</h1>
+          <h1>🐋フィシュルストック</h1>
           <p>家にあるフィシュルをスマホでさっと確認するためのアプリです。</p>
         </section>
         <section className="card">
-          <h2>ログイン</h2>
+          <h2>🔑ログイン</h2>
           <button type="button" className="primary-button" onClick={handleSignIn} disabled={isLoading}>
             Googleでログイン
           </button>
@@ -304,17 +313,17 @@ function App() {
       <main className="app-shell">
         <section className="hero">
           <p className="eyebrow">Fishlle Stock</p>
-          <h1>フィシュルストック</h1>
+          <h1>🐋フィシュルストック</h1>
         </section>
         <section className="card">
-          <h2>リストを作成</h2>
+          <h2>📒リストを作成</h2>
           <p>新しいリストを作り、フィシュルを登録します。</p>
           <button type="button" className="primary-button" onClick={handleCreateHousehold} disabled={isLoading}>
             リストを作成
           </button>
         </section>
         <section className="card">
-          <h2>招待コードで参加</h2>
+          <h2>🏠️招待コードで参加</h2>
           <p>家族から教えてもらった招待コードを入力してください。</p>
           <label className="form-field">
             <span className="form-label">招待コード</span>
@@ -344,14 +353,14 @@ function App() {
       <main className="app-shell">
         <section className="hero">
           <p className="eyebrow">Fishlle Stock</p>
-          <h1>在庫詳細</h1>
+          <h1>🐟️フィシュル詳細</h1>
         </section>
 
         <section className="card stock-detail">
           <h2 className="detail-name">{selectedItem.name}</h2>
           {matchedRecipeProduct && (
             <div className="recipe-links">
-              <h3 className="recipe-links-title">このフィシュルで作れるレシピ</h3>
+              <h3 className="recipe-links-title">🍽️このフィシュルで作れるレシピ</h3>
               <ul className="recipe-links-list">
                 {matchedRecipeProduct.recipes.map((recipe) => (
                   <li key={recipe.url}>
@@ -389,7 +398,7 @@ function App() {
               <textarea
                 value={detailMemo}
                 onChange={(e) => setDetailMemo(e.target.value)}
-                placeholder="在庫に関するメモ（複数行可）"
+                placeholder="フィシュルに関するメモ（複数行可）"
                 rows={4}
               />
             </label>
@@ -430,12 +439,12 @@ function App() {
     <main className="app-shell">
       <section className="hero">
         <p className="eyebrow">Fishlle Stock</p>
-        <h1>フィシュルストック</h1>
+        <h1>🐋フィシュルストック</h1>
         <p>家にあるフィシュルをスマホでさっと確認するためのアプリです。</p>
       </section>
 
       <section className="card stock-list">
-        <h2>フィシュルリスト</h2>
+        <h2>🐟フィシュルリスト</h2>
         {sortedStockItems.length === 0 ? (
           <p className="empty-message">まだフィシュルが登録されていません。</p>
         ) : (
@@ -468,7 +477,7 @@ function App() {
       </section>
 
       <section className="card">
-        <h2>フィシュルを一括追加</h2>
+        <h2>➕フィシュルを一括追加</h2>
         <form className="add-form" onSubmit={handleSubmit}>
           <label className="form-field">
             <span className="form-label">届いた日</span>
@@ -500,7 +509,7 @@ function App() {
 
       {authUser.uid === household.ownerUid && (
         <section className="card">
-          <h2>招待コード</h2>
+          <h2>🎫招待コード</h2>
           {inviteCode ? (
             <>
               <p className="invite-code">{inviteCode}</p>
