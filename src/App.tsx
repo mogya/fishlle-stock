@@ -92,6 +92,15 @@ function App() {
   }, [authUser?.uid, household?.id])
 
   useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      setSelectedItemId(event.state?.selectedItemId ?? null)
+      setError(null)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  useEffect(() => {
     loadRecipes()
       .then((data) => setRecipeProducts(data.products))
       .catch((err) => console.error('Failed to load recipes:', err))
@@ -214,13 +223,13 @@ function App() {
   }
 
   const handleSelectItem = (id: string) => {
+    window.history.pushState({ selectedItemId: id }, '')
     setSelectedItemId(id)
     setError(null)
   }
 
   const handleBack = () => {
-    setSelectedItemId(null)
-    setError(null)
+    window.history.back()
   }
 
   const handleUpdate = async () => {
