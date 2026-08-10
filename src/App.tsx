@@ -48,7 +48,10 @@ function App() {
   const [inviteCode, setInviteCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+  // マウント時に history.state から復元することでリロード後の空振りを防ぐ
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(
+    window.history.state?.selectedItemId ?? null,
+  )
   const [detailRemainingCount, setDetailRemainingCount] = useState<number | ''>('')
   const [detailReceivedDate, setDetailReceivedDate] = useState<string>('')
   const [detailMemo, setDetailMemo] = useState<string>('')
