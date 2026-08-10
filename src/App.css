@@ -233,7 +233,6 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 24px;
 }
 
 .detail-actions {
@@ -244,6 +243,27 @@ button:disabled {
 
 .recipe-links {
   margin-bottom: 24px;
+}
+
+.detail-readonly {
+  margin-bottom: 24px;
+}
+
+.detail-readonly .stock-meta {
+  color: #1f2933;
+  font-size: 17px;
+}
+
+.detail-readonly .stock-meta strong {
+  font-size: 28px;
+}
+
+.detail-memo-full {
+  white-space: pre-wrap;
+  overflow: visible;
+  text-overflow: unset;
+  color: #374151;
+  font-size: 15px;
 }
 
 .recipe-links-title {
