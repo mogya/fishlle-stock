@@ -48,7 +48,10 @@ function App() {
   const [inviteCode, setInviteCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+  // マウント時に history.state から復元することでリロード後の空振りを防ぐ
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(
+    window.history.state?.selectedItemId ?? null,
+  )
   const [detailRemainingCount, setDetailRemainingCount] = useState<number | ''>('')
   const [detailReceivedDate, setDetailReceivedDate] = useState<string>('')
   const [detailMemo, setDetailMemo] = useState<string>('')
@@ -358,6 +361,7 @@ function App() {
 
         <section className="card stock-detail">
           <h2 className="detail-name">{selectedItem.name}</h2>
+
           {matchedRecipeProduct && (
             <div className="recipe-links">
               <h3 className="recipe-links-title">🍽️このフィシュルで作れるレシピ</h3>
@@ -372,6 +376,37 @@ function App() {
               </ul>
             </div>
           )}
+        </section>
+
+        <section className="card">
+          <div className="stock-info detail-readonly">
+            <span className="stock-meta">
+              残数 {selectedItem.remainingCount} · 届いた日 {formatDate(selectedItem.receivedDate)}
+            </span>
+            <span className="stock-memo detail-memo-full">メモ {selectedItem.memo || '（なし）'}</span>
+          </div>
+          {error && <p className="error-message">{error}</p>}
+          <div className="detail-actions">
+            <button
+              type="button"
+              className="eat-button"
+              onClick={() => handleEat(selectedItem.id)}
+              disabled={isLoading || selectedItem.remainingCount <= 0}
+            >
+              食べた(一個減らす)
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handleBack}
+              disabled={isLoading}
+            >
+              戻る
+            </button>
+          </div>
+        </section>
+
+        <section className="card">
           <div className="detail-form">
             <label className="form-field">
               <span className="form-label">残数</span>
@@ -402,7 +437,6 @@ function App() {
                 rows={4}
               />
             </label>
-            {error && <p className="error-message">{error}</p>}
             <button
               type="button"
               className="primary-button"
@@ -411,24 +445,7 @@ function App() {
             >
               更新
             </button>
-          </div>
-          <div className="detail-actions">
-            <button
-              type="button"
-              className="eat-button"
-              onClick={() => handleEat(selectedItem.id)}
-              disabled={isLoading || selectedItem.remainingCount <= 0}
-            >
-              食べた(一個減らす)
-            </button>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={handleBack}
-              disabled={isLoading}
-            >
-              戻る
-            </button>
+            {error && <p className="error-message">{error}</p>}
           </div>
         </section>
       </main>
