@@ -9,6 +9,10 @@
   margin-bottom: 24px;
 }
 
+.hero-back {
+  cursor: pointer;
+}
+
 .eyebrow {
   color: #2f855a;
   font-weight: 700;

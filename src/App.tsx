@@ -354,9 +354,21 @@ function App() {
   if (selectedItem) {
     return (
       <main className="app-shell">
-        <section className="hero">
+        <section
+          className="hero hero-back"
+          onClick={handleBack}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              handleBack()
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="一覧に戻る"
+        >
           <p className="eyebrow">Osakana Stock</p>
-          <h1>🐟️お魚詳細</h1>
+          <h1>🐋お魚ストック</h1>
         </section>
 
         <section className="card stock-detail">
