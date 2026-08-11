@@ -284,8 +284,8 @@ function App() {
     return (
       <main className="app-shell">
         <section className="hero">
-          <p className="eyebrow">Fishlle Stock</p>
-          <h1>フィシュルストック</h1>
+          <p className="eyebrow">Osakana Stock</p>
+          <h1>お魚ストック</h1>
         </section>
         <p className="loading-message">読み込み中...</p>
       </main>
@@ -296,9 +296,9 @@ function App() {
     return (
       <main className="app-shell">
         <section className="hero">
-          <p className="eyebrow">Fishlle Stock</p>
-          <h1>🐋フィシュルストック</h1>
-          <p>家にあるフィシュルをスマホでさっと確認するためのアプリです。</p>
+          <p className="eyebrow">Osakana Stock</p>
+          <h1>🐋お魚ストック</h1>
+          <p>家にあるお魚をスマホでさっと確認するためのアプリです。</p>
         </section>
         <section className="card">
           <h2>🔑ログイン</h2>
@@ -315,12 +315,12 @@ function App() {
     return (
       <main className="app-shell">
         <section className="hero">
-          <p className="eyebrow">Fishlle Stock</p>
-          <h1>🐋フィシュルストック</h1>
+          <p className="eyebrow">Osakana Stock</p>
+          <h1>🐋お魚ストック</h1>
         </section>
         <section className="card">
           <h2>📒リストを作成</h2>
-          <p>新しいリストを作り、フィシュルを登録します。</p>
+          <p>新しいリストを作り、お魚を登録します。</p>
           <button type="button" className="primary-button" onClick={handleCreateHousehold} disabled={isLoading}>
             リストを作成
           </button>
@@ -355,8 +355,8 @@ function App() {
     return (
       <main className="app-shell">
         <section className="hero">
-          <p className="eyebrow">Fishlle Stock</p>
-          <h1>🐟️フィシュル詳細</h1>
+          <p className="eyebrow">Osakana Stock</p>
+          <h1>🐟️お魚詳細</h1>
         </section>
 
         <section className="card stock-detail">
@@ -364,7 +364,7 @@ function App() {
 
           {matchedRecipeProduct && (
             <div className="recipe-links">
-              <h3 className="recipe-links-title">🍽️このフィシュルで作れるレシピ</h3>
+              <h3 className="recipe-links-title">🍽️このお魚で作れるレシピ</h3>
               <ul className="recipe-links-list">
                 {matchedRecipeProduct.recipes.map((recipe) => (
                   <li key={recipe.url}>
@@ -433,7 +433,7 @@ function App() {
               <textarea
                 value={detailMemo}
                 onChange={(e) => setDetailMemo(e.target.value)}
-                placeholder="フィシュルに関するメモ（複数行可）"
+                placeholder="お魚に関するメモ（複数行可）"
                 rows={4}
               />
             </label>
@@ -455,15 +455,15 @@ function App() {
   return (
     <main className="app-shell">
       <section className="hero">
-        <p className="eyebrow">Fishlle Stock</p>
-        <h1>🐋フィシュルストック</h1>
-        <p>家にあるフィシュルをスマホでさっと確認するためのアプリです。</p>
+        <p className="eyebrow">Osakana Stock</p>
+        <h1>🐋お魚ストック</h1>
+        <p>家にあるお魚をスマホでさっと確認するためのアプリです。</p>
       </section>
 
       <section className="card stock-list">
-        <h2>🐟フィシュルリスト</h2>
+        <h2>🐟お魚リスト</h2>
         {sortedStockItems.length === 0 ? (
-          <p className="empty-message">まだフィシュルが登録されていません。</p>
+          <p className="empty-message">まだお魚が登録されていません。</p>
         ) : (
           <ul>
             {sortedStockItems.map((item) => (
@@ -494,7 +494,7 @@ function App() {
       </section>
 
       <section className="card">
-        <h2>➕フィシュルを一括追加</h2>
+        <h2>➕お魚を一括追加</h2>
         <form className="add-form" onSubmit={handleSubmit}>
           <label className="form-field">
             <span className="form-label">届いた日</span>
