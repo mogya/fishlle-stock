@@ -354,9 +354,16 @@ function App() {
   if (selectedItem) {
     return (
       <main className="app-shell">
-        <section className="hero">
+        <section className="hero hero-back">
           <p className="eyebrow">Osakana Stock</p>
-          <h1>🐟️お魚詳細</h1>
+          <h1>🐋お魚ストック</h1>
+          <button
+            type="button"
+            className="hero-back-button"
+            onClick={handleBack}
+            disabled={isLoading}
+            aria-label="一覧に戻る"
+          />
         </section>
 
         <section className="card stock-detail">
