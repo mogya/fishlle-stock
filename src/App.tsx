@@ -284,7 +284,7 @@ function App() {
     return (
       <main className="app-shell">
         <section className="hero">
-          <p className="eyebrow">Fishlle Stock</p>
+          <p className="eyebrow">Osakana Stock</p>
           <h1>お魚ストック</h1>
         </section>
         <p className="loading-message">読み込み中...</p>
@@ -296,7 +296,7 @@ function App() {
     return (
       <main className="app-shell">
         <section className="hero">
-          <p className="eyebrow">Fishlle Stock</p>
+          <p className="eyebrow">Osakana Stock</p>
           <h1>🐋お魚ストック</h1>
           <p>家にあるお魚をスマホでさっと確認するためのアプリです。</p>
         </section>
@@ -315,7 +315,7 @@ function App() {
     return (
       <main className="app-shell">
         <section className="hero">
-          <p className="eyebrow">Fishlle Stock</p>
+          <p className="eyebrow">Osakana Stock</p>
           <h1>🐋お魚ストック</h1>
         </section>
         <section className="card">
@@ -355,7 +355,7 @@ function App() {
     return (
       <main className="app-shell">
         <section className="hero">
-          <p className="eyebrow">Fishlle Stock</p>
+          <p className="eyebrow">Osakana Stock</p>
           <h1>🐟️お魚詳細</h1>
         </section>
 
@@ -455,7 +455,7 @@ function App() {
   return (
     <main className="app-shell">
       <section className="hero">
-        <p className="eyebrow">Fishlle Stock</p>
+        <p className="eyebrow">Osakana Stock</p>
         <h1>🐋お魚ストック</h1>
         <p>家にあるお魚をスマホでさっと確認するためのアプリです。</p>
       </section>
