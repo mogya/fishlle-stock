@@ -445,6 +445,7 @@ function App() {
             >
               更新
             </button>
+            {error && <p className="error-message">{error}</p>}
           </div>
         </section>
       </main>

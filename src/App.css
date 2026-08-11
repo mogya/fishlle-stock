@@ -254,10 +254,6 @@ button:disabled {
   font-size: 17px;
 }
 
-.detail-readonly .stock-meta strong {
-  font-size: 28px;
-}
-
 .detail-memo-full {
   white-space: pre-wrap;
   overflow: visible;
