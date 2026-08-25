@@ -61,9 +61,9 @@ git pull --ff-only origin "$pr_head_branch"
 
 取得例:
 ```bash
-gh api repos/$OWNER/$REPO/issues/$PR_NUMBER/comments
-gh api repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments
-gh api repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews
+gh api --paginate repos/$OWNER/$REPO/issues/$PR_NUMBER/comments
+gh api --paginate repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments
+gh api --paginate repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews
 ```
 
 ### 4. 指摘事項を検討
