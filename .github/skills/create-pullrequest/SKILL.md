@@ -1,13 +1,13 @@
 ---
 name: create-pullrequest
-description: origin/main...HEAD の差分コミットを解析し、コミットメッセージ（概要・背景・詳細）を活用して高品質な Pull Request のタイトルと本文を作成・起票します。
+description: origin/main..HEAD の差分コミットを解析し、コミットメッセージ（概要・背景・詳細）を活用して高品質な Pull Request のタイトルと本文を作成・起票します。
 argument-hint: "必要なら PR の補足（目的・懸念点・レビュー観点）を指定"
 ---
 
 # Create Pull Request
 
 ## このスキルが行うこと
-- `git log -p origin/main...HEAD` を主軸に、複数コミットの差分とコミットメッセージを横断して変更意図を要約します。
+- `git log -p origin/main..HEAD` を主軸に、複数コミットの差分とコミットメッセージを横断して変更意図を要約します。
 - ユーザーとの会話履歴にある意図・経緯・レビュー観点があれば、コミット情報と同等に根拠として取り込みます。
 - 変更ファイルだけでなく、コミット本文の背景情報・判断理由を PR 本文へ反映します。
 - PR のタイトル、要約、変更点、確認観点、テスト観点を整えて `gh pr create` で起票します。
@@ -25,16 +25,16 @@ argument-hint: "必要なら PR の補足（目的・懸念点・レビュー観
 
 ### 1. 解析範囲を確定
 1. ベースブランチは `main` 固定で扱います。
-2. 比較範囲は `origin/main...HEAD` を基本にします。
+2. コミット収集の範囲は `origin/main..HEAD` を基本にします。
 
 ### 2. コミット情報を収集（必須）
 1. まず全体像を取得します。
 ```bash
-git log --reverse --pretty=format:'%H%n%s%n%b%n---END---' origin/main...HEAD
+git log --reverse --pretty=format:'%H%n%s%n%b%n---END---' origin/main..HEAD
 ```
 2. 次に差分詳細を取得します。
 ```bash
-git log -p origin/main...HEAD
+git log -p origin/main..HEAD
 ```
 3. 必要ならファイル一覧も取得します。
 ```bash
@@ -57,7 +57,7 @@ git diff --name-status origin/main...HEAD
 ### 4. 品質チェック
 - `staged` / `modified` だけを根拠に本文を書いていない
 - 会話履歴に明示された意図・経緯・懸念が PR に反映されている
-- `git log -p origin/main...HEAD` で確認した内容と矛盾がない
+- `git log -p origin/main..HEAD` で確認した内容と矛盾がない
 - コミット本文の背景情報が PR に反映されている
 - 影響範囲とリスクが本文に含まれる
 - タイトルが変更の目的を表し、曖昧語だけで終わっていない
@@ -66,6 +66,7 @@ git diff --name-status origin/main...HEAD
 1. タイトル案と本文案を作成したら、まず PR 本文ファイルを作成します。
 ```bash
 # ユーザー確認・直接編集用の本文ファイルを先に作る
+mkdir -p tmp
 pr_body_file="tmp/pr_body_$(date +%Y%m%d_%H%M%S).md"
 cat <<'EOF' > "$pr_body_file"
 <PR_BODY>
@@ -113,7 +114,7 @@ gh pr create --base main --draft --title "<PR_TITLE>" --body-file "$pr_body_file
 - `gh` が失敗した場合、未認証の場合: PRドラフト本文まで生成し、起票コマンドのみ提示
 
 ## 完了条件
-- `origin/main...HEAD` のコミット情報と会話履歴を根拠に PR タイトルと本文が完成している
+- `origin/main..HEAD` のコミット情報と会話履歴を根拠に PR タイトルと本文が完成している
 - ユーザー確認時点で PR 本文ファイルが作成され、直接編集可能な状態になっている
 - コミット本文の背景情報が PR に反映されている
 - ユーザー承認後、`gh pr create` まで実行できている（または実行不能理由を明示している）
