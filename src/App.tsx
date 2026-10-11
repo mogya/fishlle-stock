@@ -38,61 +38,59 @@ function formatDate(dateString: string): string {
   return `${year}-${month}-${day}`
 }
 
+const EMPTY_STOCK_ITEMS: StockItem[] = []
+
 function App() {
   const [authUser, setAuthUser] = useState<User | null | undefined>(undefined)
-  const [household, setHousehold] = useState<Household | null | undefined>(undefined)
-  const [stockItems, setStockItems] = useState<StockItem[]>([])
+  const [householdResult, setHouseholdResult] = useState<{ uid: string; value: Household | null } | null>(null)
+  const household = authUser === null ? null : authUser && householdResult && householdResult.uid === authUser.uid ? householdResult.value : undefined
+  const [stockResult, setStockResult] = useState<{ householdId: string; items: StockItem[] } | null>(null)
+  const stockItems = stockResult && household && stockResult.householdId === household.id ? stockResult.items : EMPTY_STOCK_ITEMS
   const [receivedDate, setReceivedDate] = useState<string>(getTodayDateString())
   const [inputText, setInputText] = useState<string>('')
   const [inviteInput, setInviteInput] = useState<string>('')
-  const [inviteCode, setInviteCode] = useState<string | null>(null)
+  const [issuedInvite, setIssuedInvite] = useState<{ uid: string; householdId: string; code: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   // マウント時に history.state から復元することでリロード後の空振りを防ぐ
   const [selectedItemId, setSelectedItemId] = useState<string | null>(
     window.history.state?.selectedItemId ?? null,
   )
-  const [detailRemainingCount, setDetailRemainingCount] = useState<number | ''>('')
-  const [detailReceivedDate, setDetailReceivedDate] = useState<string>('')
-  const [detailMemo, setDetailMemo] = useState<string>('')
+  const [detailDraft, setDetailDraft] = useState<{
+    item: StockItem
+    remainingCount: number | ''
+    receivedDate: string
+    memo: string
+  } | null>(null)
   const [recipeProducts, setRecipeProducts] = useState<RecipeProduct[]>([])
 
 
   useEffect(() => {
-    return subscribeAuth((user) => setAuthUser(user))
+    return subscribeAuth((user) => {
+      setHouseholdResult(null)
+      setStockResult(null)
+      setIssuedInvite(null)
+      setAuthUser(user)
+    })
   }, [])
 
   useEffect(() => {
-    if (authUser === undefined) {
-      return
-    }
-    if (authUser === null) {
-      setHousehold(null)
-      return
-    }
-    setHousehold(undefined)
+    if (!authUser) return
     return subscribeHouseholdForUser(
       authUser.uid,
-      (h) => setHousehold(h),
+      (value) => setHouseholdResult({ uid: authUser.uid, value }),
       (err) => setError(err.message),
     )
   }, [authUser])
 
   useEffect(() => {
-    if (!household) {
-      setStockItems([])
-      return
-    }
+    if (!household?.id) return
     return subscribeStockItems(
       household.id,
-      (items) => setStockItems(items),
+      (items) => setStockResult({ householdId: household.id, items }),
       (err) => setError(err.message),
     )
-  }, [household?.id])
-
-  useEffect(() => {
-    setInviteCode(null)
-  }, [authUser?.uid, household?.id])
+  }, [household])
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
@@ -118,18 +116,17 @@ function App() {
   const selectedItem = useMemo(() => {
     return stockItems.find((item) => item.id === selectedItemId) ?? null
   }, [stockItems, selectedItemId])
+  const detailRemainingCount = detailDraft?.item === selectedItem
+    ? detailDraft.remainingCount : selectedItem?.remainingCount ?? ''
+  const detailReceivedDate = detailDraft?.item === selectedItem
+    ? detailDraft.receivedDate : selectedItem?.receivedDate ?? ''
+  const detailMemo = detailDraft?.item === selectedItem
+    ? detailDraft.memo : selectedItem?.memo ?? ''
 
   const matchedRecipeProduct = useMemo(() => {
     if (!selectedItem) return null
     return findRecipeProduct(selectedItem.name, recipeProducts)
   }, [selectedItem, recipeProducts])
-
-  useEffect(() => {
-    if (!selectedItem) return
-    setDetailRemainingCount(selectedItem.remainingCount)
-    setDetailReceivedDate(selectedItem.receivedDate)
-    setDetailMemo(selectedItem.memo)
-  }, [selectedItem])
 
   const handleSignIn = async () => {
     setError(null)
@@ -272,7 +269,7 @@ function App() {
     try {
       setIsLoading(true)
       const code = await createInvite(household.id, authUser)
-      setInviteCode(code)
+      setIssuedInvite({ uid: authUser.uid, householdId: household.id, code })
     } catch (err) {
       setError(err instanceof Error ? err.message : '招待コードの発行に失敗しました')
     } finally {
@@ -423,7 +420,7 @@ function App() {
                 max={99}
                 step={1}
                 value={detailRemainingCount}
-                onChange={(e) => setDetailRemainingCount(e.target.value === '' ? '' : Number(e.target.value))}
+                onChange={(e) => setDetailDraft({ item: selectedItem, remainingCount: e.target.value === '' ? '' : Number(e.target.value), receivedDate: detailReceivedDate, memo: detailMemo })}
               />
             </label>
             <label className="form-field">
@@ -431,7 +428,7 @@ function App() {
               <input
                 type="date"
                 value={detailReceivedDate}
-                onChange={(e) => setDetailReceivedDate(e.target.value)}
+                onChange={(e) => setDetailDraft({ item: selectedItem, remainingCount: detailRemainingCount, receivedDate: e.target.value, memo: detailMemo })}
                 required
               />
             </label>
@@ -439,7 +436,7 @@ function App() {
               <span className="form-label">メモ</span>
               <textarea
                 value={detailMemo}
-                onChange={(e) => setDetailMemo(e.target.value)}
+                onChange={(e) => setDetailDraft({ item: selectedItem, remainingCount: detailRemainingCount, receivedDate: detailReceivedDate, memo: e.target.value })}
                 placeholder="お魚に関するメモ（複数行可）"
                 rows={4}
               />
@@ -534,9 +531,9 @@ function App() {
       {authUser.uid === household.ownerUid && (
         <section className="card">
           <h2>🎫招待コード</h2>
-          {inviteCode ? (
+          {issuedInvite?.uid === authUser.uid && issuedInvite.householdId === household.id ? (
             <>
-              <p className="invite-code">{inviteCode}</p>
+              <p className="invite-code">{issuedInvite.code}</p>
               <p className="input-hint">有効期限は発行から7日間です。</p>
             </>
           ) : (
