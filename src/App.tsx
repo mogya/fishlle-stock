@@ -57,7 +57,7 @@ function App() {
     window.history.state?.selectedItemId ?? null,
   )
   const [detailDraft, setDetailDraft] = useState<{
-    item: StockItem
+    itemId: string
     remainingCount: number | ''
     receivedDate: string
     memo: string
@@ -117,11 +117,12 @@ function App() {
   const selectedItem = useMemo(() => {
     return stockItems.find((item) => item.id === selectedItemId) ?? null
   }, [stockItems, selectedItemId])
-  const detailRemainingCount = detailDraft?.item === selectedItem
+  const hasDetailDraft = selectedItem !== null && detailDraft?.itemId === selectedItem.id
+  const detailRemainingCount = hasDetailDraft
     ? detailDraft.remainingCount : selectedItem?.remainingCount ?? ''
-  const detailReceivedDate = detailDraft?.item === selectedItem
+  const detailReceivedDate = hasDetailDraft
     ? detailDraft.receivedDate : selectedItem?.receivedDate ?? ''
-  const detailMemo = detailDraft?.item === selectedItem
+  const detailMemo = hasDetailDraft
     ? detailDraft.memo : selectedItem?.memo ?? ''
 
   const matchedRecipeProduct = useMemo(() => {
@@ -422,7 +423,7 @@ function App() {
                 max={99}
                 step={1}
                 value={detailRemainingCount}
-                onChange={(e) => setDetailDraft({ item: selectedItem, remainingCount: e.target.value === '' ? '' : Number(e.target.value), receivedDate: detailReceivedDate, memo: detailMemo })}
+                onChange={(e) => setDetailDraft({ itemId: selectedItem.id, remainingCount: e.target.value === '' ? '' : Number(e.target.value), receivedDate: detailReceivedDate, memo: detailMemo })}
               />
             </label>
             <label className="form-field">
@@ -430,7 +431,7 @@ function App() {
               <input
                 type="date"
                 value={detailReceivedDate}
-                onChange={(e) => setDetailDraft({ item: selectedItem, remainingCount: detailRemainingCount, receivedDate: e.target.value, memo: detailMemo })}
+                onChange={(e) => setDetailDraft({ itemId: selectedItem.id, remainingCount: detailRemainingCount, receivedDate: e.target.value, memo: detailMemo })}
                 required
               />
             </label>
@@ -438,7 +439,7 @@ function App() {
               <span className="form-label">メモ</span>
               <textarea
                 value={detailMemo}
-                onChange={(e) => setDetailDraft({ item: selectedItem, remainingCount: detailRemainingCount, receivedDate: detailReceivedDate, memo: e.target.value })}
+                onChange={(e) => setDetailDraft({ itemId: selectedItem.id, remainingCount: detailRemainingCount, receivedDate: detailReceivedDate, memo: e.target.value })}
                 placeholder="お魚に関するメモ（複数行可）"
                 rows={4}
               />

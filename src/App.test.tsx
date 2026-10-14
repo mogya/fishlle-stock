@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import * as auth from './lib/auth'
@@ -155,6 +155,26 @@ describe('App', () => {
     await user.click(await screen.findByText('さば'))
 
     expect(screen.getByLabelText('メモ')).toHaveValue('')
+  })
+
+  it('preserves detail edits when the stock subscription refreshes', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('注文テキスト')).toBeInTheDocument()
+    })
+    await user.type(screen.getByLabelText('注文テキスト'), 'さば:2')
+    await user.click(screen.getByRole('button', { name: '登録する' }))
+    await user.click(await screen.findByText('さば'))
+
+    await user.clear(screen.getByLabelText('残数'))
+    await user.type(screen.getByLabelText('残数'), '3')
+    await user.type(screen.getByLabelText('メモ'), '編集中のメモ')
+    act(() => stockCallback?.(mockItems.map((item) => ({ ...item }))))
+
+    expect(screen.getByLabelText('残数')).toHaveValue(3)
+    expect(screen.getByLabelText('メモ')).toHaveValue('編集中のメモ')
   })
 
   it('shows parse errors for invalid input', async () => {
