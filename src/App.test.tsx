@@ -177,6 +177,34 @@ describe('App', () => {
     expect(screen.getByLabelText('メモ')).toHaveValue('編集中のメモ')
   })
 
+  it('keeps the decremented count when saving a memo edit', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('注文テキスト')).toBeInTheDocument()
+    })
+    await user.type(screen.getByLabelText('注文テキスト'), 'さば:2')
+    await user.click(screen.getByRole('button', { name: '登録する' }))
+    await user.click(await screen.findByText('さば'))
+
+    await user.type(screen.getByLabelText('メモ'), '編集中のメモ')
+    await user.click(screen.getByRole('button', { name: '食べた(一個減らす)' }))
+    await waitFor(() => {
+      expect(screen.getByText(/残数 1/)).toBeInTheDocument()
+    })
+    expect(screen.getByLabelText('残数')).toHaveValue(1)
+    expect(screen.getByLabelText('メモ')).toHaveValue('編集中のメモ')
+
+    await user.click(screen.getByRole('button', { name: '更新' }))
+    expect(stockRepository.updateStockItem).toHaveBeenCalledWith(
+      mockHousehold.id,
+      mockItems[0].id,
+      expect.objectContaining({ remainingCount: 1, memo: '編集中のメモ' }),
+      mockUser,
+    )
+  })
+
   it('shows parse errors for invalid input', async () => {
     const user = userEvent.setup()
     render(<App />)

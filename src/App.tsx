@@ -58,9 +58,9 @@ function App() {
   )
   const [detailDraft, setDetailDraft] = useState<{
     itemId: string
-    remainingCount: number | ''
-    receivedDate: string
-    memo: string
+    remainingCount?: number | ''
+    receivedDate?: string
+    memo?: string
   } | null>(null)
   const [recipeProducts, setRecipeProducts] = useState<RecipeProduct[]>([])
 
@@ -118,11 +118,11 @@ function App() {
     return stockItems.find((item) => item.id === selectedItemId) ?? null
   }, [stockItems, selectedItemId])
   const hasDetailDraft = selectedItem !== null && detailDraft?.itemId === selectedItem.id
-  const detailRemainingCount = hasDetailDraft
+  const detailRemainingCount = hasDetailDraft && detailDraft?.remainingCount !== undefined
     ? detailDraft.remainingCount : selectedItem?.remainingCount ?? ''
-  const detailReceivedDate = hasDetailDraft
+  const detailReceivedDate = hasDetailDraft && detailDraft?.receivedDate !== undefined
     ? detailDraft.receivedDate : selectedItem?.receivedDate ?? ''
-  const detailMemo = hasDetailDraft
+  const detailMemo = hasDetailDraft && detailDraft?.memo !== undefined
     ? detailDraft.memo : selectedItem?.memo ?? ''
 
   const matchedRecipeProduct = useMemo(() => {
@@ -217,6 +217,9 @@ function App() {
     try {
       setIsLoading(true)
       await eatStockItem(household.id, id, authUser)
+      setDetailDraft((current) => current?.itemId === id
+        ? { ...current, remainingCount: undefined }
+        : current)
     } catch (err) {
       setError(err instanceof Error ? err.message : '更新に失敗しました')
     } finally {
@@ -423,7 +426,11 @@ function App() {
                 max={99}
                 step={1}
                 value={detailRemainingCount}
-                onChange={(e) => setDetailDraft({ itemId: selectedItem.id, remainingCount: e.target.value === '' ? '' : Number(e.target.value), receivedDate: detailReceivedDate, memo: detailMemo })}
+                onChange={(e) => setDetailDraft({
+                  ...(hasDetailDraft ? detailDraft : null),
+                  itemId: selectedItem.id,
+                  remainingCount: e.target.value === '' ? '' : Number(e.target.value),
+                })}
               />
             </label>
             <label className="form-field">
@@ -431,7 +438,11 @@ function App() {
               <input
                 type="date"
                 value={detailReceivedDate}
-                onChange={(e) => setDetailDraft({ itemId: selectedItem.id, remainingCount: detailRemainingCount, receivedDate: e.target.value, memo: detailMemo })}
+                onChange={(e) => setDetailDraft({
+                  ...(hasDetailDraft ? detailDraft : null),
+                  itemId: selectedItem.id,
+                  receivedDate: e.target.value,
+                })}
                 required
               />
             </label>
@@ -439,7 +450,11 @@ function App() {
               <span className="form-label">メモ</span>
               <textarea
                 value={detailMemo}
-                onChange={(e) => setDetailDraft({ itemId: selectedItem.id, remainingCount: detailRemainingCount, receivedDate: detailReceivedDate, memo: e.target.value })}
+                onChange={(e) => setDetailDraft({
+                  ...(hasDetailDraft ? detailDraft : null),
+                  itemId: selectedItem.id,
+                  memo: e.target.value,
+                })}
                 placeholder="お魚に関するメモ（複数行可）"
                 rows={4}
               />
