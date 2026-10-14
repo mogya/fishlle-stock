@@ -95,6 +95,7 @@ function App() {
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       setSelectedItemId(event.state?.selectedItemId ?? null)
+      setDetailDraft(null)
       setError(null)
     }
     window.addEventListener('popstate', handlePopState)
@@ -225,6 +226,7 @@ function App() {
   const handleSelectItem = (id: string) => {
     window.history.pushState({ selectedItemId: id }, '')
     setSelectedItemId(id)
+    setDetailDraft(null)
     setError(null)
   }
 

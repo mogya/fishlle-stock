@@ -139,6 +139,24 @@ describe('App', () => {
     })
   })
 
+  it('discards unsaved detail edits after returning to the list', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('注文テキスト')).toBeInTheDocument()
+    })
+    await user.type(screen.getByLabelText('注文テキスト'), 'さば:2')
+    await user.click(screen.getByRole('button', { name: '登録する' }))
+    await user.click(await screen.findByText('さば'))
+
+    await user.type(screen.getByLabelText('メモ'), '未保存のメモ')
+    await user.click(screen.getByRole('button', { name: '戻る' }))
+    await user.click(await screen.findByText('さば'))
+
+    expect(screen.getByLabelText('メモ')).toHaveValue('')
+  })
+
   it('shows parse errors for invalid input', async () => {
     const user = userEvent.setup()
     render(<App />)
