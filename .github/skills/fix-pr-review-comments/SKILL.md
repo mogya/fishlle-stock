@@ -16,8 +16,7 @@ argument-hint: "GitHub の Pull Request URL"
 
 ## このリポジトリでの前提
 - 主な実装対象は `src/`, `src/lib/`, `src/types/` と設定ファイル（`package.json`, `vite.config.ts`, `tsconfig*.json`）です。
-- 検証の基本は `npm run lint` と `npm run build`、必要に応じた手動確認です。
-- このリポジトリでは `package.json` に `test` スクリプトがないため、既存の自動テスト前提では進めません。
+- 検証の基本は `npm run lint`、`npm run build`、`npm run test:run`、必要に応じた `npm run test:rules:emulator` と手動確認です。
 
 ## いつ使うか
 - GitHub の Pull Request URL を受け取り、その PR に付いたレビュー指摘へ対応したいとき
@@ -30,28 +29,34 @@ argument-hint: "GitHub の Pull Request URL"
 1. 入力された PR URL から owner, repository, number を取得します。
 2. `gh pr view <PR_URL>` などで PR の head ブランチ名を取得します。
 3. 現在のブランチ名を取得します。
-4. 現在のブランチ名と PR の head ブランチ名が一致しない場合は、変更せずにエラー終了します。
+4. 現在のブランチ名と PR の head ブランチ名が一致しない場合、または fork 由来の PR の場合は、変更せずにエラー終了します。
 
 確認例:
 ```bash
 current_branch=$(git rev-parse --abbrev-ref HEAD)
-pr_head_branch=$(gh pr view "$PR_URL" --json headRefName --jq '.headRefName')
+pr_head_branch=$(gh pr view "$PR_URL" --json headRefName --jq '.headRefName') || exit 1
+is_cross_repository=$(gh pr view "$PR_URL" --json isCrossRepository --jq '.isCrossRepository') || exit 1
 
-if [ "$current_branch" != "$pr_head_branch" ]; then
-	echo "現在のブランチと PR の head ブランチが一致しません"
+if [[ "$current_branch" != "$pr_head_branch" || "$is_cross_repository" == true ]]; then
+	echo "現在のブランチが PR の head と異なるか、fork 由来の PR です"
 	exit 1
 fi
 ```
 
 ### 2. 最新化
-1. PR の head ブランチが追跡しているリモートを確認します。
-2. `git fetch` の後、`git pull --ff-only` で最新状態へ更新します。
-3. fast-forward できない場合は、履歴の分岐がある可能性を示して停止します。
+1. 本スキルは origin リポジトリ内の PR を想定し、fork 由来の PR には対応しません。
+2. PR の head ブランチが origin に存在することを確認します。存在しない場合は停止します。
+3. `git fetch` の後、`git pull --ff-only` で最新状態へ更新します。
+4. fast-forward できない場合は、ローカル履歴を失わないよう停止し、分岐や force-push の可能性を報告します。
 
 推奨例:
 ```bash
+if ! git ls-remote --exit-code --heads origin "$pr_head_branch" > /dev/null 2>&1; then
+	echo "エラー: origin にブランチ '$pr_head_branch' が存在しません。"
+	exit 1
+fi
 git fetch origin "$pr_head_branch"
-git pull --ff-only origin "$pr_head_branch"
+git pull --ff-only origin "$pr_head_branch" || exit 1
 ```
 
 ### 3. 指摘事項を取得
@@ -61,6 +66,11 @@ git pull --ff-only origin "$pr_head_branch"
 
 取得例:
 ```bash
+# PR URL から OWNER, REPO, PR_NUMBER を導出
+OWNER=$(echo "$PR_URL" | cut -d'/' -f4)
+REPO=$(echo "$PR_URL" | cut -d'/' -f5)
+PR_NUMBER=$(echo "$PR_URL" | cut -d'/' -f7)
+
 gh api --paginate repos/$OWNER/$REPO/issues/$PR_NUMBER/comments
 gh api --paginate repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments
 gh api --paginate repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews
@@ -87,7 +97,7 @@ gh api --paginate repos/$OWNER/$REPO/pulls/$PR_NUMBER/reviews
 1. 採用した指摘ごとに、最小の修正で根本原因を直します。
 2. 既存のコードスタイルと整合する形で修正します。
 3. 関連する箇所が複数ある場合は、1 つの論点としてまとめて直します。
-4. 変更後は、影響範囲に応じて `npm run lint`、`npm run build`、必要な手動確認を行います。
+4. 変更後は、影響範囲に応じて `npm run lint`、`npm run build`、`npm run test:run`、必要なら `npm run test:rules:emulator` と手動確認を行います。
 
 ### 6. 結果報告
 1. 指摘ごとに次の形式で報告します。

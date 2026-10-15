@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+使い方:
+  scripts/create_spec_branch [--worktree] [--document <document-name>] <yyyymmdd_jobname>
+
+例:
+  scripts/create_spec_branch 20261015_create_spec_branch_memo
+  scripts/create_spec_branch --worktree --document todo 20261015_create_spec_branch_memo
+
+実行内容:
+  - origin/main を最新化
+  - origin/main から指定したブランチを作成
+  - 共有 checkout モードでは指定したブランチへ移動
+  - worktree モードでは主 checkout の .worktrees/<branch-name>/ を作成
+  - docs/features/<branch-name>/<document-name>.md を空ファイルとして作成
+USAGE
+}
+
+worktree_mode=false
+document_name=memo
+branch_name=
+
+while (($# > 0)); do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --worktree)
+      worktree_mode=true
+      shift
+      ;;
+    --document)
+      if (($# < 2)); then
+        echo "--document には文書名が必要です" >&2
+        exit 64
+      fi
+      document_name="$2"
+      shift 2
+      ;;
+    --*)
+      echo "不明なオプションです: $1" >&2
+      exit 64
+      ;;
+    *)
+      if [[ -n "$branch_name" ]]; then
+        echo "ブランチ名は1つだけ指定してください" >&2
+        exit 64
+      fi
+      branch_name="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$branch_name" ]]; then
+  usage >&2
+  exit 64
+fi
+
+if [[ ! "$branch_name" =~ ^[0-9]{8}_[a-z0-9]+(_[a-z0-9]+)*$ ]] ||
+  ((${#branch_name} > 40)); then
+  echo "ブランチ名は40文字以内のyyyymmdd_jobname形式で指定してください: ${branch_name}" >&2
+  exit 1
+fi
+
+if [[ ! "$document_name" =~ ^[a-z0-9]+(_[a-z0-9]+)*$ ]]; then
+  echo "文書名は小文字英数字とアンダースコアで指定してください: ${document_name}" >&2
+  exit 1
+fi
+
+repo_root="$(git rev-parse --show-toplevel)"
+main_repo_root="$(git worktree list --porcelain | awk 'index($0, "worktree ") == 1 { print substr($0, 10); exit }')"
+feature_dir="docs/features/${branch_name}"
+document_file="${feature_dir}/${document_name}.md"
+
+git fetch origin --prune
+
+if git show-ref --verify --quiet "refs/heads/${branch_name}" || \
+  git show-ref --verify --quiet "refs/remotes/origin/${branch_name}"; then
+  echo "同名ブランチがすでに存在します: ${branch_name}" >&2
+  exit 1
+fi
+
+if [[ -e "$repo_root/$feature_dir" ]]; then
+  echo "feature ディレクトリがすでに存在します: ${repo_root}/${feature_dir}" >&2
+  exit 1
+fi
+
+if git -C "$repo_root" ls-tree -d --name-only origin/main -- "$feature_dir" | grep -q .; then
+  echo "origin/main に feature ディレクトリがすでに存在します: ${feature_dir}" >&2
+  exit 1
+fi
+
+worktree_path="$repo_root"
+if [[ "$worktree_mode" == true ]]; then
+  worktree_path="$main_repo_root/.worktrees/${branch_name}"
+
+  if [[ -e "$worktree_path" ]]; then
+    echo "worktree パスがすでに存在します: ${worktree_path}" >&2
+    exit 1
+  fi
+
+  if git worktree list --porcelain | awk -v target="$worktree_path" 'index($0, "worktree ") == 1 && substr($0, 10) == target { found = 1 } END { exit !found }'; then
+    echo "同じパスのworktreeがすでに登録されています: ${worktree_path}" >&2
+    exit 1
+  fi
+
+  if git worktree list --porcelain | awk -v branch="refs/heads/$branch_name" '$1 == "branch" && $2 == branch { found = 1 } END { exit !found }'; then
+    echo "同じブランチのworktreeがすでに登録されています: ${branch_name}" >&2
+    exit 1
+  fi
+
+  mkdir -p "$(dirname "$worktree_path")"
+
+  if ! git worktree add --quiet -b "$branch_name" "$worktree_path" origin/main; then
+    echo "worktreeの作成に失敗しました。既存の作成物を確認してください: ${worktree_path}" >&2
+    exit 1
+  fi
+
+  if ! mkdir -p "$worktree_path/$feature_dir" || ! : > "$worktree_path/$document_file"; then
+    rm -f "$worktree_path/$document_file"
+    rmdir "$worktree_path/$feature_dir" 2>/dev/null || true
+    if ! git worktree remove "$worktree_path" >/dev/null 2>&1; then
+      echo "worktreeを削除できないため、作成物を残しました: ${worktree_path}" >&2
+      exit 1
+    fi
+    git branch -D "$branch_name" >/dev/null 2>&1 || true
+    echo "worktree内の文書作成に失敗しました。作成物を確認してください: ${worktree_path}" >&2
+    exit 1
+  fi
+else
+  original_branch="$(git -C "$repo_root" symbolic-ref --quiet --short HEAD)" || {
+    echo "共有checkoutモードはブランチ上で実行してください" >&2
+    exit 1
+  }
+
+  if ! git -C "$repo_root" checkout --quiet -b "$branch_name" origin/main; then
+    exit 1
+  fi
+
+  if ! mkdir -p "$repo_root/$feature_dir" || ! : > "$repo_root/$document_file"; then
+    rm -f "$repo_root/$document_file"
+    rmdir "$repo_root/$feature_dir" 2>/dev/null || true
+    git -C "$repo_root" checkout --quiet "$original_branch" >/dev/null 2>&1 || true
+    git -C "$repo_root" branch -D "$branch_name" >/dev/null 2>&1 || true
+    echo "feature文書の作成に失敗しました。作成物を確認してください: ${repo_root}" >&2
+    exit 1
+  fi
+fi
+
+printf 'branch=%s\n' "$branch_name"
+printf 'worktree=%s\n' "$worktree_path"
+printf 'document=%s\n' "$worktree_path/$document_file"
