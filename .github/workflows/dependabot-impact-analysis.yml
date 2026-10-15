@@ -14,11 +14,11 @@ on:
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]') || github.event_name == 'workflow_dispatch' }}
+    if: ${{ (github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]') || (github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) }}
 
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: read
       copilot-requests: write
 
     steps:
@@ -169,6 +169,23 @@ jobs:
 
           printf '%s' "$ANALYSIS" > /tmp/analysis_result.txt
 
+      - name: Package analysis result
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/dependabot-impact-analysis"
+          printf '%s\n' "$PR_NUMBER" > "$RUNNER_TEMP/dependabot-impact-analysis/pr_number"
+          printf '%s\n' "$GITHUB_EVENT_NAME" > "$RUNNER_TEMP/dependabot-impact-analysis/source_event"
+          cp /tmp/analysis_result.txt "$RUNNER_TEMP/dependabot-impact-analysis/analysis_result.md"
+
+      - name: Upload analysis result for the comment workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependabot-impact-analysis-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/dependabot-impact-analysis/
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Save Copilot usage
         if: ${{ always() }}
         continue-on-error: true
@@ -178,19 +195,3 @@ jobs:
           path: ${{ runner.temp }}/copilot-usage.jsonl
           retention-days: 30
           if-no-files-found: warn
-
-      - name: Post analysis comment to PR
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          {
-            echo "<!-- dependabot-impact-analysis -->"
-            echo "> [!NOTE]"
-            echo "> この分析は GitHub Copilot CLI によって自動生成されました。"
-            echo ""
-            cat /tmp/analysis_result.txt
-          } > /tmp/comment_body.txt
-
-          gh pr comment "${{ steps.pr.outputs.number }}" \
-            --repo "${{ github.repository }}" \
-            --body-file /tmp/comment_body.txt
