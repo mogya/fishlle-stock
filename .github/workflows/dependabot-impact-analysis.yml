@@ -1,0 +1,189 @@
+name: Dependabot Impact Analysis
+
+on:
+  pull_request_target:
+    types:
+      - opened
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to post the analysis comment on'
+        required: true
+        type: number
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    if: ${{ (github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]') || github.event_name == 'workflow_dispatch' }}
+
+    permissions:
+      contents: read
+      pull-requests: write
+      copilot-requests: write
+
+    steps:
+      - name: Determine PR number
+        id: pr
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "number=${{ inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Fetch PR diff
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DIFF=$(gh pr diff "${{ steps.pr.outputs.number }}" --repo "${{ github.repository }}")
+          if [ "${#DIFF}" -gt 12000 ]; then
+            TRUNCATED="${DIFF:0:6000}
+          ...（差分の中間部分は長いため省略されました）
+          ${DIFF: -6000}"
+          else
+            TRUNCATED="$DIFF"
+          fi
+          printf '%s' "$TRUNCATED" > /tmp/pr_diff.txt
+
+      - name: Fetch PR metadata
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr view "${{ steps.pr.outputs.number }}" --repo "${{ github.repository }}" --json title --jq '.title' > /tmp/pr_title.txt
+          gh pr view "${{ steps.pr.outputs.number }}" --repo "${{ github.repository }}" --json body --jq '.body' > /tmp/pr_body.txt
+
+      - name: Build analysis prompt
+        run: |
+          cat > /tmp/analysis_prompt.txt << 'PROMPT_EOF'
+          あなたはDependabot PRの影響範囲を分析するセキュリティ・品質アナリストです。
+          以下のPR情報と差分を分析し、結果をMarkdown形式で出力してください。
+          grep / glob ツールでリポジトリ内のコードも調査してください。
+
+          ## 分析手順
+
+          ### 1. 差分の解析
+          PRタイトル・本文・差分から、アップデート対象のライブラリ名とバージョン（before/after）を特定してください。
+          差分の中間部分が省略されている場合、確認できない変更を推測せず、リスク評価に未確認の範囲を明記してください。
+
+          **package.json/package-lock.json（npm）の場合：**
+          - 直接依存・開発依存・間接依存を区別し、対象パッケージと変更されたバージョン（before/after）を確認
+          - package.json の指定範囲が変わらず、package-lock.json だけが更新された場合も対象を確認
+
+          **GitHub Actions の場合：**
+          - アップデート対象の Action 名とバージョン（before/after）を確認
+
+          ### 2. ライブラリの変更内容確認
+          - リリースノートやCHANGELOGを web_fetch で取得し、以下のサマリを作成してください：
+            - 破壊的変更（Breaking Changes）
+            - 新機能（Features）
+            - バグ修正（Bug Fixes）
+
+          ### 3. 既存コードの影響範囲分析
+          リポジトリ内でこのライブラリが使用されている箇所を grep / glob ツールで検索してください。
+          - import 文、設定ファイル（package.json、Vite/Vitest 設定、GitHub Actions 等）での参照
+          - 実行時・開発時の使用箇所と、ビルド・テスト・Firebase デプロイへの影響を確認
+          - 影響ファイルのリストと各ファイルでの使用方法をまとめる
+
+          ### 4. バージョン差分の分類
+          - **Major**（x.y.z → x+1.0.0）：破壊的変更の可能性が高い
+          - **Minor**（x.y.z → x.y+1.0）：後方互換性のある新機能
+          - **Patch**（x.y.z → x.y.z+1）：後方互換性のあるバグ修正
+
+          ### 5. 結果の出力
+          以下のMarkdown形式のみ出力してください。これ以外の前置き・後書きは不要です。
+
+          ## ライブラリアップデート影響範囲レポート
+
+          ### アップデート対象ライブラリ
+
+          #### [ライブラリ名]
+          - **バージョン変更**: x.y.z → a.b.c
+          - **変更タイプ**: [Major/Minor/Patch]
+          - **リポジトリ**: [GitHub URL]
+
+          #### 主な変更内容
+          - [変更内容のサマリ]
+
+          #### 影響範囲
+          - **影響ファイル数**: n件
+          - **主な影響ファイル**:
+            - `path/to/file`: [使用方法の説明]
+
+          #### リスク評価
+          - **リスクレベル**: [低/中/高]
+          - **理由**: [評価理由]
+          PROMPT_EOF
+
+          {
+            echo ""
+            echo "---"
+            echo "## PR情報"
+            echo "### タイトル"
+            cat /tmp/pr_title.txt
+            echo "### 本文"
+            cat /tmp/pr_body.txt
+            echo "### 差分"
+            echo '```diff'
+            cat /tmp/pr_diff.txt
+            echo '```'
+          } >> /tmp/analysis_prompt.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Analyze with Copilot CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_OTEL_FILE_EXPORTER_PATH: ${{ runner.temp }}/copilot-usage.jsonl
+          OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT: 'false'
+        run: |
+          echo "::group::Copilot CLI analysis"
+          ANALYSIS=$(copilot \
+            -s --no-ask-user \
+            --allow-tool=grep,glob,web_fetch \
+            < /tmp/analysis_prompt.txt)
+          echo "::endgroup::"
+
+          if [ -z "$ANALYSIS" ]; then
+            echo "::error::Copilot analysis response is empty"
+            exit 1
+          fi
+
+          printf '%s' "$ANALYSIS" > /tmp/analysis_result.txt
+
+      - name: Save Copilot usage
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-usage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/copilot-usage.jsonl
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Post analysis comment to PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "<!-- dependabot-impact-analysis -->"
+            echo "> [!NOTE]"
+            echo "> この分析は GitHub Copilot CLI によって自動生成されました。"
+            echo ""
+            cat /tmp/analysis_result.txt
+          } > /tmp/comment_body.txt
+
+          gh pr comment "${{ steps.pr.outputs.number }}" \
+            --repo "${{ github.repository }}" \
+            --body-file /tmp/comment_body.txt
