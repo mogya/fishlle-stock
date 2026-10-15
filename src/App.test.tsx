@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import * as auth from './lib/auth'
@@ -137,6 +137,51 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.queryByText('さば')).not.toBeInTheDocument()
     })
+  })
+
+  it('resets all detail fields on subscription updates and when reopening an item', async () => {
+    const user = userEvent.setup()
+    mockItems = [{
+      id: 'item-1', name: 'さば', remainingCount: 2, receivedDate: '2026-10-01',
+      memo: '元のメモ', createdAt: '', updatedAt: '',
+    }]
+    window.history.replaceState(null, '')
+    render(<App />)
+
+    await user.click(await screen.findByText('さば'))
+    await user.clear(screen.getByLabelText('残数'))
+    await user.type(screen.getByLabelText('残数'), '8')
+    fireEvent.change(screen.getByLabelText('届いた日'), { target: { value: '2026-10-10' } })
+    await user.clear(screen.getByLabelText('メモ'))
+    await user.type(screen.getByLabelText('メモ'), '未保存メモ')
+
+    expect(screen.getByLabelText('残数')).toHaveValue(8)
+    expect(screen.getByLabelText('届いた日')).toHaveValue('2026-10-10')
+    expect(screen.getByLabelText('メモ')).toHaveValue('未保存メモ')
+
+    act(() => stockCallback?.([{
+      ...mockItems[0], remainingCount: 1, receivedDate: '2026-10-02', memo: 'サーバーメモ',
+    }]))
+
+    expect(screen.getByLabelText('残数')).toHaveValue(1)
+    expect(screen.getByLabelText('届いた日')).toHaveValue('2026-10-02')
+    expect(screen.getByLabelText('メモ')).toHaveValue('サーバーメモ')
+
+    await user.click(screen.getByRole('button', { name: '更新' }))
+    expect(stockRepository.updateStockItem).toHaveBeenCalledWith(
+      mockHousehold.id, 'item-1',
+      { remainingCount: 1, receivedDate: '2026-10-02', memo: 'サーバーメモ' }, mockUser,
+    )
+
+    await user.clear(screen.getByLabelText('メモ'))
+    await user.type(screen.getByLabelText('メモ'), '再び未保存')
+    await user.click(screen.getByRole('button', { name: '戻る' }))
+    await screen.findByText('さば')
+    await user.click(screen.getByText('さば'))
+
+    expect(screen.getByLabelText('残数')).toHaveValue(1)
+    expect(screen.getByLabelText('届いた日')).toHaveValue('2026-10-02')
+    expect(screen.getByLabelText('メモ')).toHaveValue('サーバーメモ')
   })
 
   it('shows parse errors for invalid input', async () => {

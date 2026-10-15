@@ -68,12 +68,12 @@ function App() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(
     window.history.state?.selectedItemId ?? null,
   )
-  const [detailDraft, setDetailDraft] = useState<{
-    item: StockItem
+  const [detailForm, setDetailForm] = useState<{
+    source: StockItem | null
     remainingCount: number | ''
     receivedDate: string
     memo: string
-  } | null>(null)
+  }>({ source: null, remainingCount: '', receivedDate: '', memo: '' })
   const [recipeProducts, setRecipeProducts] = useState<RecipeProduct[]>([])
 
 
@@ -123,22 +123,13 @@ function App() {
   const selectedItem = useMemo(() => {
     return stockItems.find((item) => item.id === selectedItemId) ?? null
   }, [stockItems, selectedItemId])
-  const detailRemainingCount = detailDraft?.item === selectedItem
-    ? detailDraft.remainingCount : selectedItem?.remainingCount ?? ''
-  const detailReceivedDate = detailDraft?.item === selectedItem
-    ? detailDraft.receivedDate : selectedItem?.receivedDate ?? ''
-  const detailMemo = detailDraft?.item === selectedItem
-    ? detailDraft.memo : selectedItem?.memo ?? ''
-
-  const updateDetailDraft = (changes: Partial<Pick<NonNullable<typeof detailDraft>, 'remainingCount' | 'receivedDate' | 'memo'>>) => {
-    if (!selectedItem) return
-    setDetailDraft((previous) => ({
-      item: selectedItem,
-      remainingCount: previous?.item === selectedItem ? previous.remainingCount : selectedItem.remainingCount,
-      receivedDate: previous?.item === selectedItem ? previous.receivedDate : selectedItem.receivedDate,
-      memo: previous?.item === selectedItem ? previous.memo : selectedItem.memo,
-      ...changes,
-    }))
+  if (detailForm.source !== selectedItem) {
+    setDetailForm({
+      source: selectedItem,
+      remainingCount: selectedItem?.remainingCount ?? '',
+      receivedDate: selectedItem?.receivedDate ?? '',
+      memo: selectedItem?.memo ?? '',
+    })
   }
 
   const matchedRecipeProduct = useMemo(() => {
@@ -252,16 +243,16 @@ function App() {
 
   const handleUpdate = async () => {
     if (!authUser || !household || !selectedItem) return
-    const count = detailRemainingCount === '' ? 0 : Number(detailRemainingCount)
+    const count = detailForm.remainingCount === '' ? 0 : Number(detailForm.remainingCount)
     if (!Number.isInteger(count) || count < 0 || count > 99) {
       setError('残数は0〜99の整数を入力してください')
       return
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(detailReceivedDate)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(detailForm.receivedDate)) {
       setError('届いた日を正しく入力してください')
       return
     }
-    if (detailMemo.length > 1000) {
+    if (detailForm.memo.length > 1000) {
       setError('メモは1000文字以内で入力してください')
       return
     }
@@ -271,7 +262,7 @@ function App() {
       await updateStockItem(
         household.id,
         selectedItem.id,
-        { remainingCount: count, receivedDate: detailReceivedDate, memo: detailMemo },
+        { remainingCount: count, receivedDate: detailForm.receivedDate, memo: detailForm.memo },
         authUser,
       )
     } catch (err) {
@@ -437,24 +428,26 @@ function App() {
                 min={0}
                 max={99}
                 step={1}
-                value={detailRemainingCount}
-                onChange={(e) => updateDetailDraft({ remainingCount: e.target.value === '' ? '' : Number(e.target.value) })}
+                value={detailForm.remainingCount}
+                onChange={(e) => setDetailForm((current) => ({
+                  ...current, remainingCount: e.target.value === '' ? '' : Number(e.target.value),
+                }))}
               />
             </label>
             <label className="form-field">
               <span className="form-label">届いた日</span>
               <input
                 type="date"
-                value={detailReceivedDate}
-                onChange={(e) => updateDetailDraft({ receivedDate: e.target.value })}
+                value={detailForm.receivedDate}
+                onChange={(e) => setDetailForm((current) => ({ ...current, receivedDate: e.target.value }))}
                 required
               />
             </label>
             <label className="form-field">
               <span className="form-label">メモ</span>
               <textarea
-                value={detailMemo}
-                onChange={(e) => updateDetailDraft({ memo: e.target.value })}
+                value={detailForm.memo}
+                onChange={(e) => setDetailForm((current) => ({ ...current, memo: e.target.value }))}
                 placeholder="お魚に関するメモ（複数行可）"
                 rows={4}
               />
