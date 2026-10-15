@@ -17,8 +17,8 @@ permissions:
 
 jobs:
   build_and_preview:
-    # fork からの PR では secrets が使えないため同一リポジトリの PR に限定する
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    # fork と Dependabot の PR では Actions secrets が使えないため除外する
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
