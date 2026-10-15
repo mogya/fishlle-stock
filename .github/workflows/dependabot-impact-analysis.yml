@@ -83,6 +83,7 @@ jobs:
             - 破壊的変更（Breaking Changes）
             - 新機能（Features）
             - バグ修正（Bug Fixes）
+          - URL が許可されていない、または取得できない場合はその事実を明記し、リリースノートの内容を推測で補わないでください。
 
           ### 3. 既存コードの影響範囲分析
           リポジトリ内でこのライブラリが使用されている箇所を grep / glob ツールで検索してください。
@@ -152,6 +153,12 @@ jobs:
           ANALYSIS=$(copilot \
             -s --no-ask-user \
             --allow-tool=grep,glob,web_fetch \
+            --allow-url=github.com \
+            --allow-url=docs.github.com \
+            --allow-url=www.npmjs.com \
+            --allow-url=registry.npmjs.org \
+            --allow-url=rubygems.org \
+            --allow-url=firebase.google.com \
             < /tmp/analysis_prompt.txt)
           echo "::endgroup::"
 
