@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import * as auth from './lib/auth'
@@ -188,6 +188,34 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByText('ABCD1234')).toBeInTheDocument()
     })
+  })
+
+  it('does not show previous household stock or invite after switching households', async () => {
+    const user = userEvent.setup()
+    const previousItem: StockItem = {
+      id: 'item-1', name: 'さば', remainingCount: 1, receivedDate: '2026-10-15',
+      memo: '', createdAt: '', updatedAt: '',
+    }
+    mockItems = [previousItem]
+    let householdCallback: ((household: typeof mockHousehold | null) => void) | undefined
+    vi.mocked(householdRepository.subscribeHouseholdForUser).mockImplementation((_, callback) => {
+      householdCallback = callback
+      callback(mockHousehold)
+      return vi.fn()
+    })
+    vi.mocked(inviteRepository.createInvite).mockResolvedValue('ABCD1234')
+
+    render(<App />)
+    await user.click(await screen.findByRole('button', { name: '招待コードを発行' }))
+    expect(await screen.findByText('ABCD1234')).toBeInTheDocument()
+    expect(screen.getByText('さば')).toBeInTheDocument()
+
+    mockItems = []
+    act(() => householdCallback?.({ ...mockHousehold, id: 'h2' }))
+
+    expect(screen.queryByText('さば')).not.toBeInTheDocument()
+    expect(screen.queryByText('ABCD1234')).not.toBeInTheDocument()
+    expect(screen.getByText('まだお魚が登録されていません。')).toBeInTheDocument()
   })
 
   it('joins a household using an invite code', async () => {

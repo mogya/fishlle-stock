@@ -15,6 +15,8 @@ import { parseStockText } from './lib/stockParser'
 import type { RecipeProduct } from './types/recipe'
 import type { StockItem } from './types/stock'
 
+const EMPTY_STOCK_ITEMS: StockItem[] = []
+
 function getTodayDateString(): string {
   const now = new Date()
   const year = now.getFullYear()
@@ -40,21 +42,38 @@ function formatDate(dateString: string): string {
 
 function App() {
   const [authUser, setAuthUser] = useState<User | null | undefined>(undefined)
-  const [household, setHousehold] = useState<Household | null | undefined>(undefined)
-  const [stockItems, setStockItems] = useState<StockItem[]>([])
+  const [subscribedHousehold, setSubscribedHousehold] = useState<{
+    uid: string
+    value: Household | null
+  } | null>(null)
+  const household = authUser === null
+    ? null
+    : authUser && subscribedHousehold?.uid === authUser.uid
+      ? subscribedHousehold.value
+      : undefined
+  const [subscribedStock, setSubscribedStock] = useState<{ householdId: string; items: StockItem[] } | null>(null)
+  const householdId = household?.id
+  const stockItems = subscribedStock && subscribedStock.householdId === householdId
+    ? subscribedStock.items : EMPTY_STOCK_ITEMS
   const [receivedDate, setReceivedDate] = useState<string>(getTodayDateString())
   const [inputText, setInputText] = useState<string>('')
   const [inviteInput, setInviteInput] = useState<string>('')
-  const [inviteCode, setInviteCode] = useState<string | null>(null)
+  const [issuedInvite, setIssuedInvite] = useState<{ uid: string; householdId: string; code: string } | null>(null)
+  const inviteCode = authUser && household && issuedInvite?.uid === authUser.uid && issuedInvite.householdId === household.id
+    ? issuedInvite.code
+    : null
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   // マウント時に history.state から復元することでリロード後の空振りを防ぐ
   const [selectedItemId, setSelectedItemId] = useState<string | null>(
     window.history.state?.selectedItemId ?? null,
   )
-  const [detailRemainingCount, setDetailRemainingCount] = useState<number | ''>('')
-  const [detailReceivedDate, setDetailReceivedDate] = useState<string>('')
-  const [detailMemo, setDetailMemo] = useState<string>('')
+  const [detailDraft, setDetailDraft] = useState<{
+    item: StockItem
+    remainingCount: number | ''
+    receivedDate: string
+    memo: string
+  } | null>(null)
   const [recipeProducts, setRecipeProducts] = useState<RecipeProduct[]>([])
 
 
@@ -63,36 +82,22 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (authUser === undefined) {
-      return
-    }
-    if (authUser === null) {
-      setHousehold(null)
-      return
-    }
-    setHousehold(undefined)
+    if (!authUser) return
     return subscribeHouseholdForUser(
       authUser.uid,
-      (h) => setHousehold(h),
+      (value) => setSubscribedHousehold({ uid: authUser.uid, value }),
       (err) => setError(err.message),
     )
   }, [authUser])
 
   useEffect(() => {
-    if (!household) {
-      setStockItems([])
-      return
-    }
+    if (!householdId) return
     return subscribeStockItems(
-      household.id,
-      (items) => setStockItems(items),
+      householdId,
+      (items) => setSubscribedStock({ householdId, items }),
       (err) => setError(err.message),
     )
-  }, [household?.id])
-
-  useEffect(() => {
-    setInviteCode(null)
-  }, [authUser?.uid, household?.id])
+  }, [householdId])
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
@@ -118,18 +123,28 @@ function App() {
   const selectedItem = useMemo(() => {
     return stockItems.find((item) => item.id === selectedItemId) ?? null
   }, [stockItems, selectedItemId])
+  const detailRemainingCount = detailDraft?.item === selectedItem
+    ? detailDraft.remainingCount : selectedItem?.remainingCount ?? ''
+  const detailReceivedDate = detailDraft?.item === selectedItem
+    ? detailDraft.receivedDate : selectedItem?.receivedDate ?? ''
+  const detailMemo = detailDraft?.item === selectedItem
+    ? detailDraft.memo : selectedItem?.memo ?? ''
+
+  const updateDetailDraft = (changes: Partial<Pick<NonNullable<typeof detailDraft>, 'remainingCount' | 'receivedDate' | 'memo'>>) => {
+    if (!selectedItem) return
+    setDetailDraft((previous) => ({
+      item: selectedItem,
+      remainingCount: previous?.item === selectedItem ? previous.remainingCount : selectedItem.remainingCount,
+      receivedDate: previous?.item === selectedItem ? previous.receivedDate : selectedItem.receivedDate,
+      memo: previous?.item === selectedItem ? previous.memo : selectedItem.memo,
+      ...changes,
+    }))
+  }
 
   const matchedRecipeProduct = useMemo(() => {
     if (!selectedItem) return null
     return findRecipeProduct(selectedItem.name, recipeProducts)
   }, [selectedItem, recipeProducts])
-
-  useEffect(() => {
-    if (!selectedItem) return
-    setDetailRemainingCount(selectedItem.remainingCount)
-    setDetailReceivedDate(selectedItem.receivedDate)
-    setDetailMemo(selectedItem.memo)
-  }, [selectedItem])
 
   const handleSignIn = async () => {
     setError(null)
@@ -272,7 +287,7 @@ function App() {
     try {
       setIsLoading(true)
       const code = await createInvite(household.id, authUser)
-      setInviteCode(code)
+      setIssuedInvite({ uid: authUser.uid, householdId: household.id, code })
     } catch (err) {
       setError(err instanceof Error ? err.message : '招待コードの発行に失敗しました')
     } finally {
@@ -423,7 +438,7 @@ function App() {
                 max={99}
                 step={1}
                 value={detailRemainingCount}
-                onChange={(e) => setDetailRemainingCount(e.target.value === '' ? '' : Number(e.target.value))}
+                onChange={(e) => updateDetailDraft({ remainingCount: e.target.value === '' ? '' : Number(e.target.value) })}
               />
             </label>
             <label className="form-field">
@@ -431,7 +446,7 @@ function App() {
               <input
                 type="date"
                 value={detailReceivedDate}
-                onChange={(e) => setDetailReceivedDate(e.target.value)}
+                onChange={(e) => updateDetailDraft({ receivedDate: e.target.value })}
                 required
               />
             </label>
@@ -439,7 +454,7 @@ function App() {
               <span className="form-label">メモ</span>
               <textarea
                 value={detailMemo}
-                onChange={(e) => setDetailMemo(e.target.value)}
+                onChange={(e) => updateDetailDraft({ memo: e.target.value })}
                 placeholder="お魚に関するメモ（複数行可）"
                 rows={4}
               />
