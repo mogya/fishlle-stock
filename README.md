@@ -5,6 +5,30 @@
 
 ## 開発
 
+### Node.js
+
+開発・ビルド・テスト・Firebase CLI・レシピ取得には、[.nvmrc](./.nvmrc) で指定した
+Node.js **24.22.1** を使用します。
+
+nvm を利用している場合は、リポジトリのルートで次を実行してください。
+
+```bash
+nvm install
+nvm use
+node --version
+```
+
+別のバージョン管理ツールを使う場合も、同じバージョンをインストールしてください。
+CI の4ワークフローも `.nvmrc` を参照し、`Show Node.js version` ステップで
+実際のパッチバージョンを出力します。
+PR Quality Gate では lint・単体テスト・ルール型チェック・Emulator テスト・ビルドを実行します。
+
+#### GitHub Actions の内蔵 Node.js
+
+`actions/setup-node` はコマンド実行用の Node.js を更新しますが、
+JavaScript Action 自体の Node.js は GitHub Actions ランナーが管理します。
+本番は Firebase Hosting で静的ファイルを配信しています。
+
 ### 通常の開発サーバー
 
 ```bash

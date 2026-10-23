@@ -138,7 +138,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version-file: .nvmrc
+
+      - name: Show Node.js version
+        run: node --version
 
       - name: Install Copilot CLI
         run: npm install -g @github/copilot
