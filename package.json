@@ -17,7 +17,7 @@
     "test:rules:emulator": "firebase emulators:exec --project fishlle-stock-mogya --only firestore \"npm run test:rules\""
   },
   "dependencies": {
-    "firebase": "^13.0.0",
+    "firebase": "^13.1.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
