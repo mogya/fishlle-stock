@@ -7,6 +7,6 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
-    exclude: [...configDefaults.exclude, 'src/rules/**'],
+    exclude: [...configDefaults.exclude, 'src/rules/**', 'tests/**'],
   },
 })

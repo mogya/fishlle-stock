@@ -44,6 +44,9 @@ jobs:
       - name: Run test suite
         run: npm run test:run
 
+      - name: Run script tests
+        run: npm run test:scripts
+
       - name: Typecheck Firestore rules tests
         run: npm run typecheck:rules
 
