@@ -14,6 +14,7 @@
     "test:run": "vitest run",
     "typecheck:rules": "tsc -p tsconfig.rules.json --noEmit",
     "test:rules": "vitest run --config vitest.rules.config.ts",
+    "test:scripts": "vitest run --config vitest.scripts.config.ts",
     "test:rules:emulator": "firebase emulators:exec --project fishlle-stock-mogya --only firestore \"npm run test:rules\""
   },
   "dependencies": {
@@ -36,6 +37,7 @@
     "oxlint": "^1.90.0",
     "typescript": "~7.0.2",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
   }
 }

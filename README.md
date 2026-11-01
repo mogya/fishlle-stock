@@ -71,6 +71,11 @@ gh actions-lock
 gh actions-lock --verify
 ```
 
+`actions.lock` を変更する PR では、`review-action-updates.yml` が旧 SHA と新 SHA の Action のコードを
+実行せずに収集し、Copilot CLI でセキュリティ観点のレビュー結果を PR コメントに投稿します。
+手順と判断基準は [`.github/skills/review-action-updates/SKILL.md`](.github/skills/review-action-updates/SKILL.md)、
+収集スクリプトのテストは `npm run test:scripts` で実行します。
+
 ## ビルド
 
 ```bash
