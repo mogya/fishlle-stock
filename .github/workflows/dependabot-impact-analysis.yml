@@ -32,7 +32,7 @@ jobs:
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
@@ -77,6 +77,7 @@ jobs:
 
           **GitHub Actions の場合：**
           - アップデート対象の Action 名とバージョン（before/after）を確認
+          - `.github/workflows/actions.lock` の差分があれば、`commit` の変更が Action のバージョン変更と対応しているか、`owner_id` / `repo_id` が変わっていないか（変わっていれば別リポジトリに置き換わった可能性があるためリスク高）を確認
 
           ### 2. ライブラリの変更内容確認
           - リリースノートやCHANGELOGを web_fetch で取得し、以下のサマリを作成してください：
@@ -136,7 +137,7 @@ jobs:
           } >> /tmp/analysis_prompt.txt
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .nvmrc
 
@@ -175,7 +176,7 @@ jobs:
       - name: Save Copilot usage
         if: ${{ always() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: copilot-usage-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/copilot-usage.jsonl
