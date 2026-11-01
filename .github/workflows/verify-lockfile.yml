@@ -1,0 +1,34 @@
+# .github/workflows/actions.lock がワークフローと一致しているか、
+# ロック済みのコミットが上流のタグから到達可能かを検証する。
+name: Verify Actions Lockfile
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/**
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/**
+  schedule:
+    # タグの付け替えなど上流側の変化を検知するため週1回実行する
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install gh-actions-lock
+        # v0.4.0 は immutable release のため、リリース資産の差し替えは起きない
+        run: gh extension install github/gh-actions-lock --pin v0.4.0
+      - name: Verify actions.lock
+        run: gh actions-lock --verify

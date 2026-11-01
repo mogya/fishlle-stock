@@ -57,6 +57,25 @@ npm run dev
 - Firestore Emulator: http://localhost:8080
 - Emulator UI: http://localhost:4000
 
+### GitHub Actions の依存固定
+
+ワークフローの `uses:` はタグ（例: `actions/checkout@v7.0.1`）で書き、実行するコミットは
+`.github/workflows/actions.lock` で固定しています（[gh-actions-lock](https://github.com/github/gh-actions-lock) 方式）。
+ワークフローの追加や `uses:` の変更時は `gh actions-lock` を再実行し、ワークフローと
+`actions.lock` を同じコミットに含めてください。`actions.lock` は手で編集せず、
+`gh actions-lock --verify` で検証します（CI の `verify-lockfile.yml` でも実行）。
+
+```bash
+gh extension install github/gh-actions-lock --pin v0.4.0
+gh actions-lock
+gh actions-lock --verify
+```
+
+`actions.lock` を変更する PR では、`review-action-updates.yml` が旧 SHA と新 SHA の Action のコードを
+実行せずに収集し、Copilot CLI でセキュリティ観点のレビュー結果を PR コメントに投稿します。
+手順と判断基準は [`.github/skills/review-action-updates/SKILL.md`](.github/skills/review-action-updates/SKILL.md)、
+収集スクリプトのテストは `npm run test:scripts` で実行します。
+
 ## ビルド
 
 ```bash
