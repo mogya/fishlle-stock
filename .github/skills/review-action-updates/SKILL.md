@@ -35,7 +35,23 @@ node "$SKILL_DIR/scripts/collect.mjs" \
   --output "$REPOSITORY_ROOT/tmp/action-review-unique-name"
 ```
 
-- Git と Node.js の標準モジュールだけを使う。`npm install`、gh-actions-lock のインストール、認証情報の入力は不要。非公開リポジトリは初版の対象外。
+続いて、信頼済みスキルの固定依存をインストールし、生成物を前処理する。
+`EVIDENCE` は上で新規作成した証拠ディレクトリの絶対パス。
+
+```bash
+EVIDENCE="$REPOSITORY_ROOT/tmp/action-review-unique-name"
+npm ci --prefix "$SKILL_DIR/scripts" --ignore-scripts --no-audit --no-fund
+node "$SKILL_DIR/scripts/prepare.cjs" \
+  --evidence "$EVIDENCE" --output "$EVIDENCE/prepared"
+```
+
+インストールするのは信頼済みのスキル専用package-lockに固定された解析器だけ。
+対象Actionのpackage.json、設定ファイル、プラグイン、ビルド処理は読み込んで実行しない。
+前処理はNode.js 24以降を使い、終了コード0は前処理完了、2は不完全または失敗。
+収集と前処理のステータスは別であり、いずれも安全性やレビュー完了を意味しない。
+詳しい出力の読み方は [bundle-preparation.md](references/bundle-preparation.md) を参照する。
+
+- 収集は Git と Node.js の標準モジュールだけを使う。`npm install`、gh-actions-lock のインストール、認証情報の入力は不要。非公開リポジトリは初版の対象外。
 - 終了コード `0` は収集完了、`2` は収集失敗または不完全。いずれもセキュリティ判定ではない。
 - `manifest.json` を最初に読み、`base` / `head`、`source_mode`、`errors`、全 `updates` と各 `gaps` を確認する。manifest がなければ収集失敗として扱う。
 - `workflows.diff` と manifest の `workflows.before` / `workflows.after` から利用ワークフローを確認する。コードが同じでも workflow 追加や参照変更で利用範囲が変わる。

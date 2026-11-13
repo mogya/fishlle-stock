@@ -12,6 +12,7 @@ const comment = workflow.jobs.comment
 const stepRun = (id) => review.steps.find((step) => step.id === id).run
 const comparisonScript = stepRun('comparison')
 const collectScript = stepRun('collect')
+const preparationScript = stepRun('preparation')
 const commentScript = comment.steps[0].run
 const base = 'a'.repeat(40)
 const head = 'b'.repeat(40)
@@ -41,11 +42,21 @@ case "$1" in
 esac
 `,
       node: `#!/bin/bash
+if [[ "$1" == *prepare.cjs ]]; then
+  if [[ "$MOCK_PREPARATION" != absent ]]; then
+    mkdir -p "$EVIDENCE/prepared"
+    printf '%s' "$MOCK_PREPARATION" > "$EVIDENCE/prepared/manifest.json"
+  fi
+  exit "$MOCK_PREPARATION_STATUS"
+fi
 if [[ "$MOCK_MANIFEST" != absent ]]; then
   mkdir -p "$EVIDENCE"
   printf '%s' "$MOCK_MANIFEST" > "$EVIDENCE/manifest.json"
 fi
 exit "$MOCK_COLLECT_STATUS"
+`,
+      npm: `#!/bin/bash
+exit 0
 `,
       base64: `#!/bin/bash
 [[ "\${MOCK_BASE64_FAILURE:-0}" == 0 ]] || exit 1
@@ -80,6 +91,8 @@ exec /usr/bin/base64 "$@"
       MOCK_DIFF_STATUS: '1',
       MOCK_MANIFEST: '{"collection_status":"incomplete"}',
       MOCK_COLLECT_STATUS: '2',
+      MOCK_PREPARATION: '{"status":"incomplete"}',
+      MOCK_PREPARATION_STATUS: '2',
       MOCK_COMMENT: path.join(directory, 'posted'),
       ...overrides,
     }
@@ -97,12 +110,30 @@ exec /usr/bin/base64 "$@"
     expect(comment.permissions).toEqual({ 'pull-requests': 'write' })
     expect(stepRun('analysis')).toContain('--available-tools=view,grep,glob')
     expect(stepRun('analysis')).toContain('--disable-builtin-mcps')
+    expect(stepRun('analysis')).toContain('prepared/manifest.json')
+    expect(stepRun('analysis')).toContain('requires_bundle_review')
+    expect(stepRun('analysis')).toContain('normalized_diff.chunks')
   })
 
   it('信頼済みrevisionのスクリプトでPRのheadを実行せずに収集する', () => {
     expect(review.steps[0].with).toMatchObject({ ref: '${{ github.workflow_sha }}', 'persist-credentials': false })
     expect(collectScript).toContain('node .github/skills/review-action-updates/scripts/collect.mjs')
-    expect(review.steps.some((step) => /npm (ci|install)(?! -g @github\/copilot@)/.test(step.run ?? ''))).toBe(false)
+    expect(collectScript).not.toMatch(/npm (ci|install)/)
+  })
+
+  it('信頼済みの解析器を用い、不完全な前処理と異常終了を区別する', () => {
+    expect(preparationScript).toContain('npm ci --prefix "$tool" --ignore-scripts')
+    expect(preparationScript).toContain('"$EVIDENCE/prepared"')
+    let result = execute(preparationScript)
+    expect(result.status, result.stderr).toBe(0)
+
+    result = execute(preparationScript, { MOCK_PREPARATION: '{"status":"complete"}', MOCK_PREPARATION_STATUS: '0' })
+    expect(result.status, result.stderr).toBe(0)
+    expect(execute(preparationScript, { MOCK_PREPARATION_STATUS: '1' }).status).not.toBe(0)
+    expect(execute(preparationScript, { MOCK_PREPARATION_STATUS: '0' }).status).not.toBe(0)
+
+    fs.rmSync(path.join(directory, 'evidence'), { recursive: true, force: true })
+    expect(execute(preparationScript, { MOCK_PREPARATION: 'absent' }).status).not.toBe(0)
   })
 
   it('現在のPRのSHAを固定し、lockfile差分の有無を判定する', () => {
