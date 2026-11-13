@@ -1,0 +1,13 @@
+{
+  "name": "action-review-preparation",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Static preparation of untrusted Action bundles; never executes target code",
+  "engines": { "node": ">=24" },
+  "dependencies": {
+    "@babel/generator": "7.29.8",
+    "@babel/parser": "7.29.9",
+    "@jridgewell/trace-mapping": "0.3.31"
+  },
+  "scripts": { "test": "node --test prepare.test.cjs" }
+}
