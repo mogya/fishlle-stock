@@ -101,10 +101,12 @@ exec /usr/bin/base64 "$@"
   const output = () => fs.readFileSync(path.join(directory, 'output'), 'utf8')
   const posted = () => path.join(directory, 'posted')
 
-  it('作者を限定せずlockfile変更と手動起動を対象にし、権限を分離する', () => {
+  it('DependabotのPRと手動起動を対象にし、権限を分離する', () => {
     expect(workflow.on.pull_request_target).toEqual({ types: ['opened', 'synchronize', 'reopened'] })
     expect(workflow.on.workflow_dispatch.inputs).toHaveProperty('pr_number')
     expect(workflow.permissions).toEqual({})
+    expect(review.if).toBe("github.event_name == 'workflow_dispatch' || github.event.pull_request.user.login == 'dependabot[bot]'")
+    expect(comment.needs).toBe('review')
     expect(review.permissions).not.toHaveProperty('pull-requests-write')
     expect(review.permissions['pull-requests']).toBe('read')
     expect(comment.permissions).toEqual({ 'pull-requests': 'write' })

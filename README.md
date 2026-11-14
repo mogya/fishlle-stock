@@ -71,8 +71,9 @@ gh actions-lock
 gh actions-lock --verify
 ```
 
-`actions.lock` を変更する PR では、`review-action-updates.yml` が旧 SHA と新 SHA の Action のコードを
+`actions.lock` を変更する Dependabot の PR では、`review-action-updates.yml` が旧 SHA と新 SHA の Action のコードを
 実行せずに収集し、Copilot CLI でセキュリティ観点のレビュー結果を PR コメントに投稿します。
+Dependabot 以外の PR は手動実行（`workflow_dispatch`）でレビューできます。
 手順と判断基準は [`.github/skills/review-action-updates/SKILL.md`](.github/skills/review-action-updates/SKILL.md)、
 収集スクリプトのテストは `npm run test:scripts` で実行します。
 
